@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "riftLabDataUrl";
   const PLAYER_QUEUE = { value: "all" };
-  const MATCH_FILTERS = { queue: "all", champion: "" };
+  const MATCH_FILTERS = { queue: "all", champion: "", player: "all" };
   const NOTE_FILTERS = { search: "" };
 
   const SAMPLE_DATA = {
@@ -271,6 +271,7 @@
     renderStatus(mode, errorMessage);
     renderShared(payload);
     renderCurrentPage(payload);
+    renderMatchPlayerFilter(payload);
     bindPageControls(payload);
   }
 
@@ -570,7 +571,8 @@
     const matches = data.matches.filter((match) => {
       const queueOk = MATCH_FILTERS.queue === "all" || String(match.queueId) === MATCH_FILTERS.queue;
       const championOk = !championTerm || match.champion.toLowerCase().includes(championTerm);
-      return queueOk && championOk;
+      const playerOk = MATCH_FILTERS.player === "all" || normalizeKey(match.player) === MATCH_FILTERS.player;
+      return queueOk && championOk && playerOk;
     });
 
     node.innerHTML = matches.length
@@ -607,6 +609,14 @@
       });
     }
 
+    const playerFilter = document.querySelector("[data-player-filter]");
+    if (playerFilter) {
+      playerFilter.addEventListener("change", () => {
+        MATCH_FILTERS.player = playerFilter.value;
+        renderMatches(data);
+      });
+    }
+
     const noteSearch = document.querySelector("[data-note-search]");
     if (noteSearch) {
       noteSearch.addEventListener("input", () => {
@@ -614,6 +624,24 @@
         renderNotes(data);
       });
     }
+  }
+
+  function renderMatchPlayerFilter(data) {
+    const filter = document.querySelector("[data-player-filter]");
+    if (!filter) return;
+
+    const selected = filter.value || MATCH_FILTERS.player;
+    const players = data.players.length
+      ? data.players.map((player) => player.name)
+      : [...new Set(data.matches.map((match) => match.player).filter(Boolean))];
+
+    filter.innerHTML = [
+      '<option value="all">All players</option>',
+      ...players.map((player) => `<option value="${escapeHtml(normalizeKey(player))}">${escapeHtml(player)}</option>`)
+    ].join("");
+
+    filter.value = players.some((player) => normalizeKey(player) === selected) ? selected : "all";
+    MATCH_FILTERS.player = filter.value;
   }
 
   function metricCards(metrics) {
@@ -639,31 +667,51 @@
     const showSolo = queueMode !== "flex";
     const showFlex = queueMode !== "solo";
     const summary = playerSummary(player.name);
+    const insights = playerInsights(player.name);
 
     return `
-      <article class="player-card">
-        <div class="player-topline">
-          <div class="player-id">
-            <h3>${escapeHtml(player.name)}</h3>
-            <p>${escapeHtml(riotId(player))}</p>
+      <article class="player-card league-player-card">
+        <div class="league-card-header">
+          <div class="lol-brand">
+            <span class="lol-symbol"></span>
+            <span>League<span>of Legends</span></span>
           </div>
-          <span class="level-badge">Lv ${escapeHtml(formatNumber(player.level || 0))}</span>
         </div>
-        <div class="rank-pair">
-          ${showSolo ? rankBox("Solo/Duo", player, "solo") : ""}
-          ${showFlex ? rankBox("Ranked Flex", player, "flex") : ""}
+        <div class="league-card-body">
+          <div class="league-id-row">
+            <div>
+              <h3>${escapeHtml(player.name)}</h3>
+              <p>${escapeHtml(riotId(player))} <span>VN2</span></p>
+            </div>
+            <div class="sync-stamp">
+              <span class="sync-icon"></span>
+              <span>now</span>
+            </div>
+          </div>
+
+          <div class="league-ranks ${showSolo && showFlex ? "" : "single"}">
+            ${showSolo ? leagueRankPanel("Solo/Duo", player, "solo") : ""}
+            ${showFlex ? leagueRankPanel("Ranked Flex", player, "flex") : ""}
+          </div>
+
+          <div class="league-record">
+            <strong>${escapeHtml(summary ? percentText(summary.winRate) : percentText(player.soloWr))}</strong>
+            <span>${escapeHtml(summary ? `W/L (${summary.wins}/${summary.losses})` : `Solo (${formatNumber(player.soloWins)}/${formatNumber(player.soloLosses)})`)}</span>
+          </div>
+
+          <div class="league-extra">
+            <span>Positions & Champions</span>
+            <div class="lane-champion-row">
+              <div class="lane-row">${insights.roles.map(roleBadge).join("")}</div>
+              <div class="champion-row">${insights.champions.map(championAvatar).join("")}</div>
+            </div>
+          </div>
         </div>
-        <div class="summary-strip">
-          <div><span>Recent WR</span><strong>${escapeHtml(summary ? percentText(summary.winRate) : "No games")}</strong></div>
-          <div><span>Games</span><strong>${escapeHtml(summary ? formatNumber(summary.games) : "0")}</strong></div>
-          <div><span>Record</span><strong>${escapeHtml(summary ? `${summary.wins}-${summary.losses}` : "0-0")}</strong></div>
-        </div>
-        ${player.notes ? `<p>${escapeHtml(player.notes)}</p>` : ""}
       </article>
     `;
   }
 
-  function rankBox(label, player, mode) {
+  function leagueRankPanel(label, player, mode) {
     const tier = player[`${mode}Tier`];
     const rank = player[`${mode}Rank`];
     const lp = player[`${mode}Lp`];
@@ -672,12 +720,114 @@
     const winRate = player[`${mode}Wr`];
 
     return `
-      <div class="rank-box ${mode === "flex" ? "flex" : ""}">
-        <span>${escapeHtml(label)}</span>
-        <strong>${escapeHtml(rankText(tier, rank, lp))}</strong>
-        <small>${escapeHtml(`${percentText(winRate)} | ${formatNumber(wins)}W ${formatNumber(losses)}L`)}</small>
-      </div>
+      <section class="league-rank-panel ${mode === "flex" ? "flex" : ""}">
+        <div class="queue-title">${escapeHtml(label)}</div>
+        <div class="rank-main">
+          <div class="rank-emblem ${escapeHtml(rankClass(tier))}"></div>
+          <div>
+            <strong>${escapeHtml(rankText(tier, rank, lp))}</strong>
+            <small>${escapeHtml(`${percentText(winRate)} | ${formatNumber(wins)}/${formatNumber(losses)}`)}</small>
+          </div>
+        </div>
+        <div class="peak-badge">Current</div>
+      </section>
     `;
+  }
+
+  function roleBadge(role) {
+    return `
+      <span class="lane-badge ${role.active ? "active" : ""}" title="${escapeHtml(role.label)}">
+        ${escapeHtml(role.short)}
+      </span>
+    `;
+  }
+
+  function championAvatar(champion) {
+    return `
+      <span class="champion-avatar" title="${escapeHtml(champion.name)}">
+        <img src="${escapeHtml(championIcon(champion.name))}" alt="${escapeHtml(champion.name)}">
+      </span>
+    `;
+  }
+
+  function playerInsights(playerName) {
+    const data = window.RIFT_LAB_DATA || {};
+    const matches = (data.matches || []).filter((match) => normalizeKey(match.player) === normalizeKey(playerName));
+    const roleCounts = new Map();
+    const championCounts = new Map();
+
+    matches.forEach((match) => {
+      const role = normalizeRole(match.role);
+      if (role) roleCounts.set(role, (roleCounts.get(role) || 0) + 1);
+      if (match.champion) championCounts.set(match.champion, (championCounts.get(match.champion) || 0) + 1);
+    });
+
+    const topRoles = [...roleCounts.entries()].sort((a, b) => b[1] - a[1]).map(([role]) => role);
+    const roles = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"].map((role) => ({
+      key: role,
+      short: roleShort(role),
+      label: roleLabel(role),
+      active: topRoles.slice(0, 2).includes(role)
+    }));
+
+    const champions = [...championCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, games]) => ({ name, games }));
+
+    while (champions.length < 5) {
+      champions.push({ name: ["Yone", "Lee Sin", "Kai'Sa", "Ahri", "Ezreal"][champions.length], games: 0 });
+    }
+
+    return { roles, champions };
+  }
+
+  function normalizeRole(role) {
+    const value = normalizeKey(role);
+    if (["top"].includes(value)) return "TOP";
+    if (["jungle", "jg"].includes(value)) return "JUNGLE";
+    if (["middle", "mid"].includes(value)) return "MIDDLE";
+    if (["bottom", "bot", "adc"].includes(value)) return "BOTTOM";
+    if (["utility", "support", "sup"].includes(value)) return "UTILITY";
+    return "";
+  }
+
+  function roleShort(role) {
+    return {
+      TOP: "TOP",
+      JUNGLE: "JG",
+      MIDDLE: "MID",
+      BOTTOM: "BOT",
+      UTILITY: "SUP"
+    }[role] || role;
+  }
+
+  function roleLabel(role) {
+    return {
+      TOP: "Top",
+      JUNGLE: "Jungle",
+      MIDDLE: "Middle",
+      BOTTOM: "Bottom",
+      UTILITY: "Support"
+    }[role] || role;
+  }
+
+  function rankClass(tier) {
+    const value = normalizeKey(tier);
+    return value || "unranked";
+  }
+
+  function championIcon(champion) {
+    const key = CHAMPION_KEYS[champion] || String(champion || "")
+      .replace(/['.]/g, "")
+      .replace(/&/g, "")
+      .replace(/\s+/g, "");
+
+    if (!key || key === "Unknown") {
+      return "https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/Yone.png";
+    }
+
+    return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/${encodeURIComponent(key)}.png`;
   }
 
   function noteCard(note) {
