@@ -5,6 +5,7 @@
   const PLAYER_QUEUE = { value: "all" };
   const MATCH_FILTERS = { queue: "all", champion: "", player: "all" };
   const NOTE_FILTERS = { search: "" };
+  const DATA_DRAGON_VERSION = "14.24.1";
 
   const SAMPLE_DATA = {
     updatedAt: "2026-05-23T09:00:00.000Z",
@@ -153,6 +154,9 @@
         damageMin: 1047,
         gold: 15280,
         goldMin: 493,
+        items: [6673, 3031, 3006, 3036, 3094, 3139, 3363],
+        skinId: null,
+        skinName: "",
         aiNote: "Converted lane pressure into objective control."
       },
       {
@@ -178,6 +182,9 @@
         damageMin: 785,
         gold: 12940,
         goldMin: 462,
+        items: [6630, 3071, 3158, 3053, 6333, 3026, 3364],
+        skinId: null,
+        skinName: "",
         aiNote: "High tempo jungle game with clean objective sequencing."
       },
       {
@@ -203,6 +210,9 @@
         damageMin: 842,
         gold: 14110,
         goldMin: 415,
+        items: [6672, 3006, 3031, 3085, 3036, 3026, 3363],
+        skinId: null,
+        skinName: "",
         aiNote: "Damage stayed high, but deaths before objectives broke tempo."
       }
     ]
@@ -442,6 +452,7 @@
     return {
       matchId: text(read(match, ["matchId", "Match ID"])),
       gameStart: read(match, ["gameStart", "Game Start"]) || "",
+      gameVersion: text(read(match, ["gameVersion", "Game Version"])),
       queueId,
       queueLabel: text(read(match, ["queueLabel", "Queue Label"])) || queueLabel(queueId),
       durationMin: toNumber(read(match, ["durationMin", "Duration min"])),
@@ -462,8 +473,30 @@
       damageMin: toNumber(read(match, ["damageMin", "Damage/min"])),
       gold: toNumber(read(match, ["gold", "Gold"])),
       goldMin: toNumber(read(match, ["goldMin", "Gold/min"])),
+      items: normalizeItems(match),
+      skinId: normalizeOptionalNumber(read(match, ["skinId", "skinID", "skin", "Champion Skin ID"])),
+      skinName: text(read(match, ["skinName", "Skin Name"])),
       aiNote: text(read(match, ["aiNote", "AI Note"]))
     };
+  }
+
+  function normalizeItems(match) {
+    const raw = read(match, ["items", "finalBuild", "build", "itemIds", "Item IDs"]);
+    const values = Array.isArray(raw)
+      ? raw
+      : ["item0", "item1", "item2", "item3", "item4", "item5", "item6"].map((key) => read(match, [key, key.toUpperCase()]));
+
+    return values
+      .slice(0, 7)
+      .map((item) => toNumber(item))
+      .concat(Array(7).fill(0))
+      .slice(0, 7);
+  }
+
+  function normalizeOptionalNumber(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const number = toNumber(value);
+    return Number.isFinite(number) ? number : null;
   }
 
   function normalizeMetrics(rawMetrics, players, summaryRows, matches) {
@@ -877,10 +910,40 @@
       .replace(/\s+/g, "");
 
     if (!key || key === "Unknown") {
-      return "https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/Yone.png";
+      return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/champion/Yone.png`;
     }
 
-    return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/${encodeURIComponent(key)}.png`;
+    return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/champion/${encodeURIComponent(key)}.png`;
+  }
+
+  function itemSlot(itemId, index) {
+    const id = toNumber(itemId);
+    if (!id) {
+      return `<span class="item-slot empty" title="${index === 6 ? "No trinket" : "Empty item slot"}"></span>`;
+    }
+
+    return `
+      <span class="item-slot ${index === 6 ? "trinket" : ""}" title="${escapeHtml(index === 6 ? `Trinket ${id}` : `Item ${id}`)}">
+        <img src="${escapeHtml(itemIcon(id))}" alt="">
+      </span>
+    `;
+  }
+
+  function matchBuild(match) {
+    const items = Array.isArray(match.items) ? match.items : [];
+    return items.length ? items.slice(0, 7).concat(Array(7).fill(0)).slice(0, 7) : [];
+  }
+
+  function itemIcon(itemId) {
+    return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/item/${encodeURIComponent(itemId)}.png`;
+  }
+
+  function skinLabel(match) {
+    if (match.skinName) return match.skinName;
+    if (match.skinId !== null && match.skinId !== undefined) {
+      return Number(match.skinId) ? `Skin ${formatNumber(match.skinId)}` : "Default skin";
+    }
+    return "Default champion art";
   }
 
   function noteCard(note) {
@@ -914,9 +977,11 @@
 
   function matchCard(match) {
     const resultClass = match.result.toLowerCase() === "win" ? "win" : "loss";
+    const build = matchBuild(match);
+    const skin = skinLabel(match);
     return `
       <article class="match-card">
-        <div class="match-art" style="--champion-art: url('${championSplash(match.champion)}')"></div>
+        <div class="match-art" style="--champion-art: url('${championSplash(match.champion, match.skinId)}')"></div>
         <div class="match-body">
           <div class="match-topline">
             <div class="match-title">
@@ -934,6 +999,11 @@
             <div><span>CS/min</span><strong>${escapeHtml(formatDecimal(match.csMin))}</strong></div>
             <div><span>Vision/min</span><strong>${escapeHtml(formatDecimal(match.visionMin))}</strong></div>
             <div><span>Damage/min</span><strong>${escapeHtml(formatNumber(match.damageMin))}</strong></div>
+          </div>
+          <div class="match-loadout">
+            <span class="match-loadout-label">Final Build</span>
+            <div class="item-build">${build.length ? build.map(itemSlot).join("") : '<span class="build-pending">Build pending</span>'}</div>
+            <span class="skin-chip">${escapeHtml(skin)}</span>
           </div>
           ${match.aiNote ? `<p>${escapeHtml(match.aiNote)}</p>` : ""}
         </div>
@@ -1061,7 +1131,7 @@
     return player.name || player.riotName || player.tag || "Riot ID pending";
   }
 
-  function championSplash(champion) {
+  function championSplash(champion, skinId = 0) {
     const key = CHAMPION_KEYS[champion] || String(champion || "")
       .replace(/['.]/g, "")
       .replace(/&/g, "")
@@ -1071,7 +1141,8 @@
       return "";
     }
 
-    return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${encodeURIComponent(key)}_0.jpg`;
+    const skin = skinId === null || skinId === undefined || skinId === "" ? 0 : Math.max(0, Math.round(toNumber(skinId)));
+    return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${encodeURIComponent(key)}_${skin}.jpg`;
   }
 
   function normalizeKey(value) {

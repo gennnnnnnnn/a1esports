@@ -195,6 +195,7 @@ function toMatchRow(player, match, part) {
   return {
     matchId: match.metadata.matchId,
     gameStart: new Date(Number(match.info.gameStartTimestamp) || Date.now()).toISOString(),
+    gameVersion: match.info.gameVersion || "",
     queueId: Number(match.info.queueId) || 0,
     queueLabel: queueLabel(match.info.queueId),
     durationMin: round(durationMin),
@@ -215,6 +216,10 @@ function toMatchRow(player, match, part) {
     damageMin: round(durationMin ? damage / durationMin : 0),
     gold,
     goldMin: round(durationMin ? gold / durationMin : 0),
+    items: [part.item0, part.item1, part.item2, part.item3, part.item4, part.item5, part.item6]
+      .map((item) => Number(item) || 0),
+    skinId: part.skinId ?? part.skinID ?? null,
+    skinName: part.skinName || "",
     aiNote: makeMatchNote(part, durationMin, cs)
   };
 }

@@ -171,6 +171,9 @@
       "damageMin": 1047,
       "gold": 15280,
       "goldMin": 493,
+      "items": [6673, 3031, 3006, 3036, 3094, 3139, 3363],
+      "skinId": null,
+      "skinName": "",
       "aiNote": "Converted lane pressure into objective control."
     },
     {
@@ -196,6 +199,9 @@
       "damageMin": 785,
       "gold": 12940,
       "goldMin": 462,
+      "items": [6630, 3071, 3158, 3053, 6333, 3026, 3364],
+      "skinId": null,
+      "skinName": "",
       "aiNote": "High tempo jungle game with clean objective sequencing."
     },
     {
@@ -221,6 +227,9 @@
       "damageMin": 842,
       "gold": 14110,
       "goldMin": 415,
+      "items": [6672, 3006, 3031, 3085, 3036, 3026, 3363],
+      "skinId": null,
+      "skinName": "",
       "aiNote": "Damage stayed high, but deaths before objectives broke tempo."
     }
   ],

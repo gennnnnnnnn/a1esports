@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="rift-lab-api" content="">
     <title>Rift Lab | A1 eSports</title>
-    <link rel="stylesheet" href="css/style.css?v=20260523-14">
+    <link rel="stylesheet" href="css/style.css?v=20260523-15">
     <style>
       .team-hero {
         grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
@@ -366,8 +366,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-14"></script>
-    <script src="js/app.js?v=20260523-14"></script>
+    <script src="js/config.example.js?v=20260523-15"></script>
+    <script src="js/app.js?v=20260523-15"></script>
     <script>
       (() => {
         let lastSignature = "";
@@ -648,7 +648,7 @@
         }
 
         function seasonComparison(allMatches) {
-          const seasons = seasonsFrom(allMatches).slice().reverse();
+          const seasons = seasonsFrom(allMatches);
           const groups = seasons.map((season) => [season.label, matchesForSeason(allMatches, season)]);
           return bars(groups, (rows, s) => `${pct(s.wr)} · ${rows.length}`);
         }
