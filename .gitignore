@@ -1,0 +1,15 @@
+# Local secrets and credentials
+.env
+.env.*
+*.local
+.clasprc.json
+.clasp.json
+credentials.json
+token.json
+
+# Local-only dashboard overrides
+js/config.local.js
+
+# Tooling and transient logs
+.server*.log
+*.log

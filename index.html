@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="rift-lab-api" content="">
+    <title>Rift Lab | A1 eSports</title>
+    <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body data-page="home">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Rift Lab home">
+        <span class="brand-mark">A1</span>
+        <span>
+          <strong>Rift Lab</strong>
+          <small>A1 eSports</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="index.html" data-nav="home">Home</a>
+        <a href="players.html" data-nav="players">Players</a>
+        <a href="coach.html" data-nav="coach">Coach</a>
+        <a href="matches.html" data-nav="matches">Matches</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero shell">
+        <div class="hero-copy">
+          <p class="eyebrow">VN2 ranked squad analytics</p>
+          <h1>A1 eSports Rift Lab</h1>
+          <p class="hero-lede">Live player ranks, recent form, and coach notes from the squad sheet.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="players.html">View Players</a>
+            <a class="button ghost" href="matches.html">Recent Matches</a>
+          </div>
+        </div>
+        <div class="hero-panel" aria-label="Rift Lab rank snapshot">
+          <div class="hero-art"></div>
+          <div class="hero-glass">
+            <span>Solo/Duo</span>
+            <strong data-field="highest-solo">Loading</strong>
+          </div>
+          <div class="hero-glass lower">
+            <span>Ranked Flex</span>
+            <strong data-field="highest-flex">Loading</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="shell status-slot" data-status></section>
+
+      <section class="shell metrics-grid" data-home-metrics aria-label="Dashboard metrics"></section>
+
+      <section class="shell split-section">
+        <div>
+          <div class="section-heading">
+            <p class="eyebrow">Squad</p>
+            <h2>Tracked Players</h2>
+          </div>
+          <div class="cards-grid compact" data-home-players></div>
+        </div>
+        <aside class="side-panel">
+          <div class="section-heading tight">
+            <p class="eyebrow">Coach</p>
+            <h2>Latest Notes</h2>
+          </div>
+          <div data-home-notes></div>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="site-footer shell">
+      <span>Rift Lab pulls public dashboard data from Apps Script.</span>
+      <span data-updated-at>Waiting for sync</span>
+    </footer>
+
+    <script src="js/config.example.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
