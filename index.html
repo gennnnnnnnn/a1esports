@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="rift-lab-api" content="">
     <title>Rift Lab | A1 eSports</title>
-    <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
-    <link rel="stylesheet" href="css/style.css?v=20260523-11">
+    <link rel="stylesheet" href="css/style.css?v=20260523-13">
     <style>
       .team-hero {
         grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
@@ -28,7 +27,32 @@
         align-content: center;
         min-height: 500px;
         padding: 22px;
-        overflow: hidden;
+      }
+
+      .season-control {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin: 18px 0;
+      }
+
+      .season-control label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .season-control select {
+        min-height: 38px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(18, 22, 32, 0.82);
+        color: var(--text);
+        font-weight: 800;
       }
 
       .team-scoreboard {
@@ -273,16 +297,16 @@
         <div class="hero-copy">
           <p class="eyebrow">VN2 ranked squad analytics</p>
           <h1>A1 eSports Rift Lab</h1>
-          <p class="hero-lede">Team-level ranked performance, form trends, queue balance, and role distribution.</p>
+          <p class="hero-lede">Team statistics are grouped by season: Season 1 = Jan-Apr, Season 2 = May-Aug, Season 3 = Sep-Dec.</p>
           <div class="hero-actions">
             <a class="button primary" href="coach.html">Open Coach Board</a>
             <a class="button ghost" href="matches.html">Recent Matches</a>
           </div>
         </div>
-        <aside class="team-hero-card" data-team-hero aria-label="Team performance summary">
+        <aside class="team-hero-card" data-team-hero aria-label="Team seasonal performance summary">
           <div class="team-scoreboard">
             <div class="team-score-main">
-              <span>Team win rate</span>
+              <span>Season win rate</span>
               <strong>Loading</strong>
               <small>Waiting for ranked data</small>
             </div>
@@ -292,16 +316,23 @@
 
       <section class="shell status-slot" data-status></section>
 
-      <section class="shell metrics-grid team-metrics" data-home-metrics aria-label="Team metrics"></section>
+      <section class="shell season-control" aria-label="Season selector">
+        <label for="season-select">Season</label>
+        <select id="season-select" data-season-select>
+          <option>Loading seasons</option>
+        </select>
+      </section>
+
+      <section class="shell metrics-grid team-metrics" data-home-metrics aria-label="Team seasonal metrics"></section>
 
       <section class="shell team-dashboard-section">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Team dashboard</p>
+            <p class="eyebrow">Season dashboard</p>
             <h2>Squad Performance</h2>
           </div>
         </div>
-        <div class="team-dashboard-grid" data-team-dashboard aria-label="Team charts"></div>
+        <div class="team-dashboard-grid" data-team-dashboard aria-label="Seasonal team charts"></div>
       </section>
     </main>
 
@@ -310,12 +341,12 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-11"></script>
-    <script src="js/app.js?v=20260523-11"></script>
+    <script src="js/config.example.js?v=20260523-13"></script>
+    <script src="js/app.js?v=20260523-13"></script>
     <script>
       (() => {
-        const WINDOW = 40;
         let lastSignature = "";
+        let selectedSeasonKey = "";
 
         function escapeHtml(value) {
           return String(value ?? "")
@@ -349,6 +380,51 @@
           return { games: rows.length, wins, losses, wr: rows.length ? (wins / rows.length) * 100 : 0 };
         }
 
+        function seasonOf(dateLike) {
+          const date = new Date(dateLike);
+          const safe = Number.isNaN(date.getTime()) ? new Date() : date;
+          const year = safe.getUTCFullYear();
+          const block = Math.floor(safe.getUTCMonth() / 4) + 1;
+          const startMonth = (block - 1) * 4;
+          const endMonth = startMonth + 3;
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const start = new Date(Date.UTC(year, startMonth, 1, 0, 0, 0));
+          const end = new Date(Date.UTC(year, endMonth + 1, 1, 0, 0, 0));
+          return {
+            key: `${year}-S${block}`,
+            label: `${year} Season ${block}`,
+            range: `${monthNames[startMonth]}-${monthNames[endMonth]}`,
+            start,
+            end
+          };
+        }
+
+        function latestMatches(data) {
+          return [...(data.matches || [])]
+            .filter((match) => match && match.gameStart)
+            .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
+        }
+
+        function seasonsFrom(matches) {
+          const byKey = new Map();
+          matches.forEach((match) => {
+            const season = seasonOf(match.gameStart);
+            if (!byKey.has(season.key)) byKey.set(season.key, season);
+          });
+          if (!byKey.size) {
+            const fallback = seasonOf(new Date());
+            byKey.set(fallback.key, fallback);
+          }
+          return [...byKey.values()].sort((a, b) => b.start - a.start);
+        }
+
+        function matchesForSeason(matches, season) {
+          return matches.filter((match) => {
+            const date = new Date(match.gameStart);
+            return !Number.isNaN(date.getTime()) && date >= season.start && date < season.end;
+          });
+        }
+
         function queueLabel(queueId) {
           if (Number(queueId) === 420) return "Solo/Duo";
           if (Number(queueId) === 440) return "Flex";
@@ -376,12 +452,6 @@
           return [...map.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
         }
 
-        function latestMatches(data) {
-          return [...(data.matches || [])]
-            .filter((match) => match && match.gameStart)
-            .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
-        }
-
         function metricCard(label, value, hint) {
           return `
             <article class="metric-card">
@@ -392,52 +462,60 @@
           `;
         }
 
-        function renderMetrics(data, matches) {
+        function renderSeasonSelect(seasons) {
+          const select = document.querySelector("[data-season-select]");
+          if (!select) return seasons[0];
+          const currentValue = selectedSeasonKey || select.value || seasons[0]?.key || "";
+          select.innerHTML = seasons.map((season) => `<option value="${escapeHtml(season.key)}">${escapeHtml(`${season.label} (${season.range})`)}</option>`).join("");
+          selectedSeasonKey = seasons.some((season) => season.key === currentValue) ? currentValue : seasons[0]?.key || "";
+          select.value = selectedSeasonKey;
+          return seasons.find((season) => season.key === selectedSeasonKey) || seasons[0];
+        }
+
+        function renderMetrics(season, matches) {
           const node = document.querySelector("[data-home-metrics]");
           if (!node) return;
-          const recent = matches.slice(0, WINDOW);
-          const s = stat(recent);
-          const solo = stat(recent.filter((match) => Number(match.queueId) === 420));
-          const flex = stat(recent.filter((match) => Number(match.queueId) === 440));
+          const s = stat(matches);
+          const solo = stat(matches.filter((match) => Number(match.queueId) === 420));
+          const flex = stat(matches.filter((match) => Number(match.queueId) === 440));
           node.innerHTML = [
-            metricCard("Recent Games", String(s.games), `Latest ${WINDOW} imported ranked games`),
-            metricCard("Team Win Rate", pct(s.wr), `${s.wins}W-${s.losses}L`),
+            metricCard("Season Games", String(s.games), `${season.label} · ${season.range}`),
+            metricCard("Season Win Rate", pct(s.wr), `${s.wins}W-${s.losses}L`),
             metricCard("Solo/Duo", pct(solo.wr), `${solo.wins}W-${solo.losses}L`),
             metricCard("Flex", pct(flex.wr), `${flex.wins}W-${flex.losses}L`),
-            metricCard("Avg KDA", fmt(avg(recent, "kda"), 2), "Team combat conversion"),
-            metricCard("Avg Vision/min", fmt(avg(recent, "visionMin"), 2), "Objective setup signal")
+            metricCard("Avg KDA", fmt(avg(matches, "kda"), 2), "Season combat conversion"),
+            metricCard("Avg Vision/min", fmt(avg(matches, "visionMin"), 2), "Season objective setup")
           ].join("");
         }
 
-        function renderHero(matches) {
+        function renderHero(season, matches) {
           const node = document.querySelector("[data-team-hero]");
           if (!node) return;
-          const recent = matches.slice(0, WINDOW);
-          const s = stat(recent);
-          const roles = groupBy(recent, (match) => roleLabel(match.role));
-          const queues = groupBy(recent, (match) => queueLabel(match.queueId));
+          const s = stat(matches);
+          const roles = groupBy(matches, (match) => roleLabel(match.role));
+          const queues = groupBy(matches, (match) => queueLabel(match.queueId));
           const topRole = roles[0] ? `${roles[0][0]} (${roles[0][1].length})` : "No role data";
           const topQueue = queues[0] ? `${queues[0][0]} (${queues[0][1].length})` : "No queue data";
           node.innerHTML = `
             <div class="team-scoreboard">
               <div class="team-score-main">
-                <span>Team win rate</span>
+                <span>${escapeHtml(`${season.label} · ${season.range}`)}</span>
                 <strong>${escapeHtml(pct(s.wr))}</strong>
-                <small>${escapeHtml(`${s.wins}W-${s.losses}L across latest ${s.games} ranked games`)}</small>
+                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} seasonal ranked games`)}</small>
               </div>
               <div class="team-score-grid">
-                <div class="team-score-item"><span>Avg KDA</span><strong>${escapeHtml(fmt(avg(recent, "kda"), 2))}</strong><small>team average</small></div>
-                <div class="team-score-item"><span>Damage/min</span><strong>${escapeHtml(String(Math.round(avg(recent, "damageMin"))))}</strong><small>team output</small></div>
-                <div class="team-score-item"><span>Main role sample</span><strong>${escapeHtml(topRole)}</strong><small>by recent games</small></div>
-                <div class="team-score-item"><span>Main queue sample</span><strong>${escapeHtml(topQueue)}</strong><small>by recent games</small></div>
+                <div class="team-score-item"><span>Avg KDA</span><strong>${escapeHtml(fmt(avg(matches, "kda"), 2))}</strong><small>season average</small></div>
+                <div class="team-score-item"><span>Damage/min</span><strong>${escapeHtml(String(Math.round(avg(matches, "damageMin"))))}</strong><small>season output</small></div>
+                <div class="team-score-item"><span>Main role sample</span><strong>${escapeHtml(topRole)}</strong><small>by season games</small></div>
+                <div class="team-score-item"><span>Main queue sample</span><strong>${escapeHtml(topQueue)}</strong><small>by season games</small></div>
               </div>
             </div>
           `;
         }
 
         function lineChart(matches) {
-          const sample = matches.slice(0, WINDOW).reverse();
-          if (!sample.length) return '<p>No match data available for a trend chart yet.</p>';
+          const sample = [...matches].reverse();
+          if (!sample.length) return '<p>No match data available for this season yet.</p>';
           const points = sample.map((_, index) => {
             const block = sample.slice(Math.max(0, index - 4), index + 1);
             return stat(block).wr;
@@ -466,28 +544,27 @@
             return `<line class="chart-grid-line" x1="${left}" y1="${y}" x2="${left + usableW}" y2="${y}" /><text class="chart-label" x="4" y="${y + 4}">${value}%</text>`;
           }).join("");
           return `
-            <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Team rolling win-rate trend">
+            <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Season rolling win-rate trend">
               ${grid}
               <line class="chart-axis-line" x1="${left}" y1="${height - bottom}" x2="${left + usableW}" y2="${height - bottom}" />
               <polygon class="chart-fill" points="${area}" />
               <polyline class="chart-line" points="${polyline}" />
               ${dots}
-              <text class="chart-label" x="${left}" y="${height - 8}">older</text>
-              <text class="chart-label" x="${left + usableW - 30}" y="${height - 8}">latest</text>
+              <text class="chart-label" x="${left}" y="${height - 8}">season start</text>
+              <text class="chart-label" x="${left + usableW - 34}" y="${height - 8}">latest</text>
             </svg>
           `;
         }
 
         function radarChart(matches) {
-          const recent = matches.slice(0, WINDOW);
-          const s = stat(recent);
+          const s = stat(matches);
           const values = [
             ["WR", Math.min(1, s.wr / 70)],
-            ["KDA", Math.min(1, avg(recent, "kda") / 5)],
-            ["CS", Math.min(1, avg(recent, "csMin") / 8)],
-            ["VIS", Math.min(1, avg(recent, "visionMin") / 1.3)],
-            ["DMG", Math.min(1, avg(recent, "damageMin") / 1000)],
-            ["SAFE", Math.max(0.08, Math.min(1, 1 - avg(recent, "deaths") / 8))]
+            ["KDA", Math.min(1, avg(matches, "kda") / 5)],
+            ["CS", Math.min(1, avg(matches, "csMin") / 8)],
+            ["VIS", Math.min(1, avg(matches, "visionMin") / 1.3)],
+            ["DMG", Math.min(1, avg(matches, "damageMin") / 1000)],
+            ["SAFE", Math.max(0.08, Math.min(1, 1 - avg(matches, "deaths") / 8))]
           ];
           const cx = 210;
           const cy = 112;
@@ -503,11 +580,11 @@
             const [x, y] = point(1.17, index);
             return `<text class="radar-label" x="${x - 10}" y="${y + 4}">${label}</text>`;
           }).join("");
-          return `<svg viewBox="0 0 420 230" role="img" aria-label="Team performance radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
+          return `<svg viewBox="0 0 420 230" role="img" aria-label="Season team performance radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
         }
 
         function bars(groups, labeler) {
-          if (!groups.length) return '<p>No grouped match data yet.</p>';
+          if (!groups.length) return '<p>No grouped match data for this season yet.</p>';
           const maxGames = Math.max(...groups.map(([, rows]) => rows.length), 1);
           return `<div class="team-bars">${groups.map(([label, rows]) => {
             const s = stat(rows);
@@ -524,7 +601,7 @@
 
         function table(matches) {
           const recent = matches.slice(0, 10);
-          if (!recent.length) return '<p>No recent ranked matches imported yet.</p>';
+          if (!recent.length) return '<p>No seasonal ranked matches imported yet.</p>';
           return `
             <table class="team-table">
               <thead><tr><th>Queue</th><th>Role</th><th>Result</th><th>KDA</th><th>CS/m</th><th>Vis/m</th><th>Dmg/m</th></tr></thead>
@@ -545,41 +622,52 @@
           `;
         }
 
-        function renderCharts(matches) {
+        function seasonComparison(allMatches) {
+          const seasons = seasonsFrom(allMatches).slice().reverse();
+          const groups = seasons.map((season) => [season.label.replace(" ", "\n"), matchesForSeason(allMatches, season)]);
+          return bars(groups, (rows, s) => `${pct(s.wr)} · ${rows.length}`);
+        }
+
+        function renderCharts(season, matches, allMatches) {
           const node = document.querySelector("[data-team-dashboard]");
           if (!node) return;
-          const recent = matches.slice(0, WINDOW);
-          const queues = groupBy(recent, (match) => queueLabel(match.queueId));
-          const roles = groupBy(recent, (match) => roleLabel(match.role));
+          const queues = groupBy(matches, (match) => queueLabel(match.queueId));
+          const roles = groupBy(matches, (match) => roleLabel(match.role));
           node.innerHTML = `
             <article class="team-chart-card">
-              <span class="chart-kicker">Trend</span>
-              <h3>Rolling Team Win Rate</h3>
-              <p>Rolling 5-game win rate across the latest imported ranked games.</p>
+              <span class="chart-kicker">${escapeHtml(season.label)}</span>
+              <h3>Season Rolling Win Rate</h3>
+              <p>Rolling 5-game win rate inside the selected season only.</p>
               ${lineChart(matches)}
             </article>
             <article class="team-chart-card">
-              <span class="chart-kicker">Profile</span>
-              <h3>Team Performance Radar</h3>
-              <p>Normalized snapshot: win rate, KDA, CS, vision, damage, and death control.</p>
+              <span class="chart-kicker">${escapeHtml(season.range)}</span>
+              <h3>Season Performance Radar</h3>
+              <p>Normalized seasonal snapshot: win rate, KDA, CS, vision, damage, and death control.</p>
               ${radarChart(matches)}
             </article>
             <article class="team-chart-card">
               <span class="chart-kicker">Queue balance</span>
               <h3>Solo/Duo vs Flex</h3>
-              <p>Game volume by queue, with win rate printed on the right.</p>
+              <p>Season game volume by queue, with win rate printed on the right.</p>
               ${bars(queues, (rows, s) => `${pct(s.wr)} · ${rows.length}`)}
             </article>
             <article class="team-chart-card">
               <span class="chart-kicker">Role sample</span>
               <h3>Role Distribution</h3>
-              <p>Where the current sample is coming from. Useful for spotting bias in the team stats.</p>
+              <p>Where the selected season sample is coming from.</p>
               ${bars(roles, (rows, s) => `${pct(s.wr)} · ${rows.length}`)}
             </article>
             <article class="team-chart-card" style="grid-column: 1 / -1;">
+              <span class="chart-kicker">Season comparison</span>
+              <h3>Available Seasons</h3>
+              <p>One calendar year is split into three seasons: Jan-Apr, May-Aug, and Sep-Dec.</p>
+              ${seasonComparison(allMatches)}
+            </article>
+            <article class="team-chart-card" style="grid-column: 1 / -1;">
               <span class="chart-kicker">Diagnostics</span>
-              <h3>Latest Match Snapshot</h3>
-              <p>The newest imported games, compressed into team-level review columns.</p>
+              <h3>Latest Seasonal Match Snapshot</h3>
+              <p>The newest imported games inside the selected season.</p>
               ${table(matches)}
             </article>
           `;
@@ -588,16 +676,27 @@
         function render() {
           const data = window.RIFT_LAB_DATA;
           if (!data) return;
-          const matches = latestMatches(data);
-          const signature = `${matches.length}|${matches[0]?.matchId || ""}|${matches[0]?.gameStart || ""}`;
+          const allMatches = latestMatches(data);
+          const seasons = seasonsFrom(allMatches);
+          const season = renderSeasonSelect(seasons);
+          const matches = matchesForSeason(allMatches, season);
+          const signature = `${season.key}|${allMatches.length}|${allMatches[0]?.matchId || ""}|${allMatches[0]?.gameStart || ""}`;
           if (signature === lastSignature) return;
           lastSignature = signature;
-          renderHero(matches);
-          renderMetrics(data, matches);
-          renderCharts(matches);
+          renderHero(season, matches);
+          renderMetrics(season, matches);
+          renderCharts(season, matches, allMatches);
         }
 
         function boot() {
+          const select = document.querySelector("[data-season-select]");
+          if (select) {
+            select.addEventListener("change", () => {
+              selectedSeasonKey = select.value;
+              lastSignature = "";
+              render();
+            });
+          }
           [0, 250, 750, 1500].forEach((delay) => setTimeout(render, delay));
           new MutationObserver(() => requestAnimationFrame(render)).observe(document.body, { childList: true, subtree: true });
         }
