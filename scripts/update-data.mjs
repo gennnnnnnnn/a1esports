@@ -218,6 +218,7 @@ function toMatchRow(player, match, part) {
     goldMin: round(durationMin ? gold / durationMin : 0),
     items: [part.item0, part.item1, part.item2, part.item3, part.item4, part.item5, part.item6]
       .map((item) => Number(item) || 0),
+    summonerSpells: [part.summoner1Id, part.summoner2Id].map((spell) => Number(spell) || 0),
     skinId: part.skinId ?? part.skinID ?? null,
     skinName: part.skinName || "",
     aiNote: makeMatchNote(part, durationMin, cs)

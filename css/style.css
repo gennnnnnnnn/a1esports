@@ -1079,13 +1079,15 @@ h3 {
   text-transform: uppercase;
 }
 
-.item-build {
+.item-build,
+.summoner-spells {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
 
-.item-slot {
+.item-slot,
+.spell-slot {
   display: inline-grid;
   width: 31px;
   height: 31px;
@@ -1094,6 +1096,10 @@ h3 {
   border: 1px solid rgba(174, 181, 191, 0.24);
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.045);
+}
+
+.spell-slot {
+  border-color: rgba(49, 215, 255, 0.38);
 }
 
 .item-slot.trinket {
@@ -1106,7 +1112,8 @@ h3 {
     rgba(255, 255, 255, 0.035);
 }
 
-.item-slot img {
+.item-slot img,
+.spell-slot img {
   display: block;
   width: 100%;
   height: 100%;

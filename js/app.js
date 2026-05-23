@@ -155,6 +155,7 @@
         gold: 15280,
         goldMin: 493,
         items: [6673, 3031, 3006, 3036, 3094, 3139, 3363],
+        summonerSpells: [4, 14],
         skinId: null,
         skinName: "",
         aiNote: "Converted lane pressure into objective control."
@@ -183,6 +184,7 @@
         gold: 12940,
         goldMin: 462,
         items: [6630, 3071, 3158, 3053, 6333, 3026, 3364],
+        summonerSpells: [4, 11],
         skinId: null,
         skinName: "",
         aiNote: "High tempo jungle game with clean objective sequencing."
@@ -211,6 +213,7 @@
         gold: 14110,
         goldMin: 415,
         items: [6672, 3006, 3031, 3085, 3036, 3026, 3363],
+        summonerSpells: [4, 7],
         skinId: null,
         skinName: "",
         aiNote: "Damage stayed high, but deaths before objectives broke tempo."
@@ -239,6 +242,22 @@
     "Vel'Koz": "Velkoz",
     "Xin Zhao": "XinZhao",
     Wukong: "MonkeyKing"
+  };
+
+  const SUMMONER_SPELLS = {
+    1: ["SummonerBoost", "Cleanse"],
+    3: ["SummonerExhaust", "Exhaust"],
+    4: ["SummonerFlash", "Flash"],
+    6: ["SummonerHaste", "Ghost"],
+    7: ["SummonerHeal", "Heal"],
+    11: ["SummonerSmite", "Smite"],
+    12: ["SummonerTeleport", "Teleport"],
+    13: ["SummonerMana", "Clarity"],
+    14: ["SummonerDot", "Ignite"],
+    21: ["SummonerBarrier", "Barrier"],
+    30: ["SummonerPoroRecall", "To the King!"],
+    31: ["SummonerPoroThrow", "Poro Toss"],
+    32: ["SummonerSnowball", "Mark"]
   };
 
   const RANK_TIERS = {
@@ -474,6 +493,7 @@
       gold: toNumber(read(match, ["gold", "Gold"])),
       goldMin: toNumber(read(match, ["goldMin", "Gold/min"])),
       items: normalizeItems(match),
+      summonerSpells: normalizeSummonerSpells(match),
       skinId: normalizeOptionalNumber(read(match, ["skinId", "skinID", "skin", "Champion Skin ID"])),
       skinName: text(read(match, ["skinName", "Skin Name"])),
       aiNote: text(read(match, ["aiNote", "AI Note"]))
@@ -491,6 +511,21 @@
       .map((item) => toNumber(item))
       .concat(Array(7).fill(0))
       .slice(0, 7);
+  }
+
+  function normalizeSummonerSpells(match) {
+    const raw = read(match, ["summonerSpells", "spells", "summonerSpellIds", "Summoner Spells"]);
+    const values = Array.isArray(raw)
+      ? raw
+      : [
+        read(match, ["summoner1Id", "summonerSpell1", "spell1", "Summoner 1"]),
+        read(match, ["summoner2Id", "summonerSpell2", "spell2", "Summoner 2"])
+      ];
+
+    return values
+      .slice(0, 2)
+      .map((spell) => toNumber(spell))
+      .filter(Boolean);
   }
 
   function normalizeOptionalNumber(value) {
@@ -938,6 +973,23 @@
     return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/item/${encodeURIComponent(itemId)}.png`;
   }
 
+  function matchSpells(match) {
+    return Array.isArray(match.summonerSpells) ? match.summonerSpells.slice(0, 2).filter(Boolean) : [];
+  }
+
+  function spellSlot(spellId) {
+    const spell = SUMMONER_SPELLS[toNumber(spellId)] || ["SummonerFlash", `Spell ${formatNumber(spellId)}`];
+    return `
+      <span class="spell-slot" title="${escapeHtml(spell[1])}">
+        <img src="${escapeHtml(spellIcon(spell[0]))}" alt="${escapeHtml(spell[1])}">
+      </span>
+    `;
+  }
+
+  function spellIcon(spellKey) {
+    return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/spell/${encodeURIComponent(spellKey)}.png`;
+  }
+
   function skinLabel(match) {
     if (match.skinName) return match.skinName;
     if (match.skinId !== null && match.skinId !== undefined) {
@@ -978,6 +1030,7 @@
   function matchCard(match) {
     const resultClass = match.result.toLowerCase() === "win" ? "win" : "loss";
     const build = matchBuild(match);
+    const spells = matchSpells(match);
     const skin = skinLabel(match);
     return `
       <article class="match-card">
@@ -1003,6 +1056,8 @@
           <div class="match-loadout">
             <span class="match-loadout-label">Final Build</span>
             <div class="item-build">${build.length ? build.map(itemSlot).join("") : '<span class="build-pending">Build pending</span>'}</div>
+            <span class="match-loadout-label">Spells</span>
+            <div class="summoner-spells">${spells.length ? spells.map(spellSlot).join("") : '<span class="build-pending">Spells pending</span>'}</div>
             <span class="skin-chip">${escapeHtml(skin)}</span>
           </div>
           ${match.aiNote ? `<p>${escapeHtml(match.aiNote)}</p>` : ""}
