@@ -10,7 +10,7 @@
     updatedAt: "2026-05-23T09:00:00.000Z",
     players: [
       {
-        name: "Nguyen",
+        name: "Road to the Top#A1E",
         riotName: "Road to the Top",
         tag: "A1E",
         level: 211,
@@ -29,8 +29,8 @@
         notes: "Stable flex climb with room to tighten solo lane resets."
       },
       {
-        name: "Hung",
-        riotName: "Vua Bip Gia Lai",
+        name: "Vua B\u1ecbp Gia Lai#7777",
+        riotName: "Vua B\u1ecbp Gia Lai",
         tag: "7777",
         level: 184,
         soloTier: "EMERALD",
@@ -48,7 +48,7 @@
         notes: "Best current flex rank in the group."
       },
       {
-        name: "Thien",
+        name: "Tian laoshi#2252",
         riotName: "Tian laoshi",
         tag: "2252",
         level: 229,
@@ -67,8 +67,8 @@
         notes: "Highest solo ladder position among tracked players."
       },
       {
-        name: "Huy",
-        riotName: "Hoc Van Truong",
+        name: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
+        riotName: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng",
         tag: "1207",
         level: 173,
         soloTier: "PLATINUM",
@@ -87,15 +87,15 @@
       }
     ],
     summaryRows: [
-      { player: "Hung", games: 10, wins: 7, losses: 3, winRate: 70 },
-      { player: "Thien", games: 10, wins: 6, losses: 4, winRate: 60 },
-      { player: "Nguyen", games: 10, wins: 5, losses: 5, winRate: 50 },
-      { player: "Huy", games: 10, wins: 4, losses: 6, winRate: 40 }
+      { player: "Vua B\u1ecbp Gia Lai#7777", games: 10, wins: 7, losses: 3, winRate: 70 },
+      { player: "Tian laoshi#2252", games: 10, wins: 6, losses: 4, winRate: 60 },
+      { player: "Road to the Top#A1E", games: 10, wins: 5, losses: 5, winRate: 50 },
+      { player: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207", games: 10, wins: 4, losses: 6, winRate: 40 }
     ],
     latestNotes: [
       {
         date: "2026-05-23",
-        player: "Hung",
+        player: "Vua B\u1ecbp Gia Lai#7777",
         scope: "Last 10 ranked games",
         summary: "Strong recent record with clean conversion in Flex.",
         strengths: "High win rate and strong skirmish impact.",
@@ -104,7 +104,7 @@
       },
       {
         date: "2026-05-23",
-        player: "Thien",
+        player: "Tian laoshi#2252",
         scope: "Last 10 ranked games",
         summary: "Best solo rank in the squad with steady lane results.",
         strengths: "Reliable CS base and low panic deaths.",
@@ -113,7 +113,7 @@
       },
       {
         date: "2026-05-23",
-        player: "Huy",
+        player: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
         scope: "Last 10 ranked games",
         summary: "Flex climb is healthy, solo games need cleaner early exits.",
         strengths: "Solid objective grouping.",
@@ -124,10 +124,10 @@
     metrics: {
       trackedPlayers: 4,
       importedMatches: 128,
-      bestRecent: "Hung 70%",
-      highestSolo: "Thien Diamond IV 77 LP",
-      highestFlex: "Hung Diamond I 67 LP",
-      worstSolo: "Huy 51%"
+      bestRecent: "Vua B\u1ecbp Gia Lai#7777 70%",
+      highestSolo: "Tian laoshi#2252 Diamond IV 77 LP",
+      highestFlex: "Vua B\u1ecbp Gia Lai#7777 Diamond I 67 LP",
+      worstSolo: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207 51%"
     },
     matches: [
       {
@@ -136,8 +136,8 @@
         queueId: 440,
         queueLabel: "Ranked Flex",
         durationMin: 31,
-        player: "Hung",
-        riotId: "Vua Bip Gia Lai#7777",
+        player: "Vua B\u1ecbp Gia Lai#7777",
+        riotId: "Vua B\u1ecbp Gia Lai#7777",
         champion: "Yone",
         role: "Middle",
         result: "Win",
@@ -161,7 +161,7 @@
         queueId: 420,
         queueLabel: "Ranked Solo/Duo",
         durationMin: 28,
-        player: "Thien",
+        player: "Tian laoshi#2252",
         riotId: "Tian laoshi#2252",
         champion: "Lee Sin",
         role: "Jungle",
@@ -186,8 +186,8 @@
         queueId: 420,
         queueLabel: "Ranked Solo/Duo",
         durationMin: 34,
-        player: "Huy",
-        riotId: "Hoc Van Truong#1207",
+        player: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
+        riotId: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
         champion: "Kai'Sa",
         role: "Bottom",
         result: "Loss",
@@ -635,25 +635,40 @@
 
     filter.innerHTML = [
       '<option value="all">All players</option>',
-      ...players.map((player) => `<option value="${escapeHtml(normalizeKey(player))}">${escapeHtml(player)}</option>`)
+      ...players.map((player) => `<option value="${escapeHtml(player.value)}">${escapeHtml(player.label)}</option>`)
     ].join("");
 
-    filter.value = players.some((player) => normalizeKey(player) === selected) ? selected : "all";
+    filter.value = players.some((player) => player.value === selected) ? selected : "all";
     MATCH_FILTERS.player = filter.value;
   }
 
   function uniquePlayerNames(data) {
     const names = new Map();
     (data.players || []).forEach((player) => {
-      if (player.name) names.set(normalizeKey(player.name), player.name);
+      if (player.name) {
+        names.set(normalizeKey(player.name), {
+          value: normalizeKey(player.name),
+          label: riotId(player)
+        });
+      }
     });
     (data.matches || []).forEach((match) => {
-      if (match.player) names.set(normalizeKey(match.player), match.player);
+      if (match.player && !names.has(normalizeKey(match.player))) {
+        names.set(normalizeKey(match.player), {
+          value: normalizeKey(match.player),
+          label: match.riotId || match.player
+        });
+      }
     });
     (data.summaryRows || []).forEach((row) => {
-      if (row.player) names.set(normalizeKey(row.player), row.player);
+      if (row.player && !names.has(normalizeKey(row.player))) {
+        names.set(normalizeKey(row.player), {
+          value: normalizeKey(row.player),
+          label: row.player
+        });
+      }
     });
-    return [...names.values()].sort((a, b) => a.localeCompare(b));
+    return [...names.values()].sort((a, b) => a.label.localeCompare(b.label));
   }
 
   function metricCards(metrics) {
@@ -693,11 +708,10 @@
         <div class="league-card-body">
           <div class="league-id-row">
             <div>
-              <h3>${escapeHtml(player.name)}</h3>
-              <p>${escapeHtml(riotId(player))} <span>VN2</span></p>
+              <h3>${escapeHtml(riotId(player))}</h3>
+              <p><span>VN2</span></p>
             </div>
             <div class="sync-stamp">
-              <span class="sync-icon"></span>
               <time datetime="${escapeHtml(lastSeen.iso)}" title="${escapeHtml(lastSeen.title)}">${escapeHtml(lastSeen.label)}</time>
             </div>
           </div>
@@ -788,14 +802,21 @@
 
   function playerInsights(playerName) {
     const data = window.RIFT_LAB_DATA || {};
-    const matches = (data.matches || []).filter((match) => normalizeKey(match.player) === normalizeKey(playerName));
+    const matches = (data.matches || [])
+      .filter((match) => normalizeKey(match.player) === normalizeKey(playerName))
+      .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime())
+      .slice(0, 20);
     const roleCounts = new Map();
     const championCounts = new Map();
+    const championRecency = new Map();
 
-    matches.forEach((match) => {
+    matches.forEach((match, index) => {
       const role = normalizeRole(match.role);
       if (role) roleCounts.set(role, (roleCounts.get(role) || 0) + 1);
-      if (match.champion) championCounts.set(match.champion, (championCounts.get(match.champion) || 0) + 1);
+      if (match.champion) {
+        championCounts.set(match.champion, (championCounts.get(match.champion) || 0) + 1);
+        if (!championRecency.has(match.champion)) championRecency.set(match.champion, index);
+      }
     });
 
     const topRoles = [...roleCounts.entries()].sort((a, b) => b[1] - a[1]).map(([role]) => role);
@@ -807,13 +828,9 @@
     }));
 
     const champions = [...championCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => b[1] - a[1] || (championRecency.get(a[0]) || 0) - (championRecency.get(b[0]) || 0))
       .slice(0, 5)
       .map(([name, games]) => ({ name, games }));
-
-    while (champions.length < 5) {
-      champions.push({ name: ["Yone", "Lee Sin", "Kai'Sa", "Ahri", "Ezreal"][champions.length], games: 0 });
-    }
 
     return { roles, champions };
   }
@@ -871,24 +888,24 @@
       <article class="note-card">
         <div class="note-topline">
           <div>
-            <h3>${escapeHtml(note.player)}</h3>
+            <h3>${escapeHtml(publicPlayerLabel(note.player))}</h3>
             <p>${escapeHtml(note.scope)}</p>
           </div>
           <time>${escapeHtml(formatDate(note.date))}</time>
         </div>
-        <p>${escapeHtml(note.summary || "No summary available.")}</p>
+        <p>${escapeHtml(privacyText(note.summary || "No summary available."))}</p>
         <div class="note-stack">
           <div class="note-block">
             <span>Strengths</span>
-            <p>${escapeHtml(note.strengths || "No strength note yet.")}</p>
+            <p>${escapeHtml(privacyText(note.strengths || "No strength note yet."))}</p>
           </div>
           <div class="note-block weak">
             <span>Weaknesses</span>
-            <p>${escapeHtml(note.weaknesses || "No weakness note yet.")}</p>
+            <p>${escapeHtml(privacyText(note.weaknesses || "No weakness note yet."))}</p>
           </div>
           <div class="note-block action">
             <span>Action Items</span>
-            <p>${escapeHtml(note.actions || "No action item yet.")}</p>
+            <p>${escapeHtml(privacyText(note.actions || "No action item yet."))}</p>
           </div>
         </div>
       </article>
@@ -910,7 +927,7 @@
             </div>
             <time>${escapeHtml(formatDate(match.gameStart))}</time>
           </div>
-          <p>${escapeHtml(match.player)}${match.riotId ? ` | ${escapeHtml(match.riotId)}` : ""}</p>
+          <p>${escapeHtml(match.riotId || publicPlayerLabel(match.player))}</p>
           <div class="match-stats">
             <div><span>KDA</span><strong>${escapeHtml(`${formatNumber(match.kills)}/${formatNumber(match.deaths)}/${formatNumber(match.assists)}`)}</strong></div>
             <div><span>KDA Ratio</span><strong>${escapeHtml(formatDecimal(match.kda))}</strong></div>
@@ -1041,7 +1058,7 @@
 
   function riotId(player) {
     if (player.riotName && player.tag) return `${player.riotName}#${player.tag}`;
-    return player.riotName || player.tag || "Riot ID pending";
+    return player.name || player.riotName || player.tag || "Riot ID pending";
   }
 
   function championSplash(champion) {
@@ -1072,11 +1089,14 @@
 
   function metricText(value) {
     if (value === null || value === undefined || value === "") return "No data";
+    let result = "";
     if (typeof value === "object") {
-      if ("player" in value && "value" in value) return `${value.player} ${value.value}`;
-      return Object.values(value).filter(Boolean).join(" ") || "No data";
+      if ("player" in value && "value" in value) result = `${value.player} ${value.value}`;
+      else result = Object.values(value).filter(Boolean).join(" ") || "No data";
+    } else {
+      result = String(value);
     }
-    return String(value);
+    return privacyText(result);
   }
 
   function percentText(value) {
@@ -1125,6 +1145,23 @@
     }).formatToParts(date);
     const get = (type) => parts.find((part) => part.type === type)?.value || "";
     return `${get("month")} ${get("day")} ${get("hour")}:${get("minute")} GMT+7`;
+  }
+
+  function publicPlayerLabel(playerName) {
+    const data = window.RIFT_LAB_DATA || {};
+    const player = (data.players || []).find((item) => normalizeKey(item.name) === normalizeKey(playerName));
+    if (player) return riotId(player);
+    return String(playerName || "");
+  }
+
+  function privacyText(value) {
+    let output = String(value || "");
+    const data = window.RIFT_LAB_DATA || {};
+    (data.players || []).forEach((player) => {
+      if (!player.name) return;
+      output = output.replaceAll(player.name, riotId(player));
+    });
+    return output;
   }
 
   function escapeHtml(value) {

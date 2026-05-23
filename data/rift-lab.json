@@ -12,7 +12,7 @@
   },
   "players": [
     {
-      "name": "Nguyen",
+      "name": "Road to the Top#A1E",
       "riotName": "Road to the Top",
       "tag": "A1E",
       "level": 211,
@@ -31,8 +31,8 @@
       "notes": "Stable flex climb with room to tighten solo lane resets."
     },
     {
-      "name": "Hung",
-      "riotName": "Vua Bịp Gia Lai",
+      "name": "Vua B\u1ecbp Gia Lai#7777",
+      "riotName": "Vua B\u1ecbp Gia Lai",
       "tag": "7777",
       "level": 184,
       "soloTier": "EMERALD",
@@ -50,7 +50,7 @@
       "notes": "Best current flex rank in the group."
     },
     {
-      "name": "Thien",
+      "name": "Tian laoshi#2252",
       "riotName": "Tian laoshi",
       "tag": "2252",
       "level": 229,
@@ -69,8 +69,8 @@
       "notes": "Highest solo ladder position among tracked players."
     },
     {
-      "name": "Huy",
-      "riotName": "Hốc Văn Trưởng",
+      "name": "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
+      "riotName": "H\u1ed1c V\u0103n Tr\u01b0\u1edfng",
       "tag": "1207",
       "level": 173,
       "soloTier": "PLATINUM",
@@ -90,28 +90,28 @@
   ],
   "summaryRows": [
     {
-      "player": "Hung",
+      "player": "Vua B\u1ecbp Gia Lai#7777",
       "games": 10,
       "wins": 7,
       "losses": 3,
       "winRate": 70
     },
     {
-      "player": "Thien",
+      "player": "Tian laoshi#2252",
       "games": 10,
       "wins": 6,
       "losses": 4,
       "winRate": 60
     },
     {
-      "player": "Nguyen",
+      "player": "Road to the Top#A1E",
       "games": 10,
       "wins": 5,
       "losses": 5,
       "winRate": 50
     },
     {
-      "player": "Huy",
+      "player": "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
       "games": 10,
       "wins": 4,
       "losses": 6,
@@ -121,7 +121,7 @@
   "latestNotes": [
     {
       "date": "2026-05-23",
-      "player": "Hung",
+      "player": "Vua B\u1ecbp Gia Lai#7777",
       "scope": "Last 10 ranked games",
       "summary": "Strong recent record with clean conversion in Flex.",
       "strengths": "High win rate and strong skirmish impact.",
@@ -130,7 +130,7 @@
     },
     {
       "date": "2026-05-23",
-      "player": "Thien",
+      "player": "Tian laoshi#2252",
       "scope": "Last 10 ranked games",
       "summary": "Best solo rank in the squad with steady lane results.",
       "strengths": "Reliable CS base and low panic deaths.",
@@ -139,7 +139,7 @@
     },
     {
       "date": "2026-05-23",
-      "player": "Huy",
+      "player": "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
       "scope": "Last 10 ranked games",
       "summary": "Flex climb is healthy, solo games need cleaner early exits.",
       "strengths": "Solid objective grouping.",
@@ -154,8 +154,8 @@
       "queueId": 440,
       "queueLabel": "Ranked Flex",
       "durationMin": 31,
-      "player": "Hung",
-      "riotId": "Vua Bịp Gia Lai#7777",
+      "player": "Vua B\u1ecbp Gia Lai#7777",
+      "riotId": "Vua B\u1ecbp Gia Lai#7777",
       "champion": "Yone",
       "role": "Middle",
       "result": "Win",
@@ -179,7 +179,7 @@
       "queueId": 420,
       "queueLabel": "Ranked Solo/Duo",
       "durationMin": 28,
-      "player": "Thien",
+      "player": "Tian laoshi#2252",
       "riotId": "Tian laoshi#2252",
       "champion": "Lee Sin",
       "role": "Jungle",
@@ -204,8 +204,8 @@
       "queueId": 420,
       "queueLabel": "Ranked Solo/Duo",
       "durationMin": 34,
-      "player": "Huy",
-      "riotId": "Hốc Văn Trưởng#1207",
+      "player": "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
+      "riotId": "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207",
       "champion": "Kai'Sa",
       "role": "Bottom",
       "result": "Loss",
@@ -227,9 +227,9 @@
   "metrics": {
     "trackedPlayers": 4,
     "importedMatches": 128,
-    "bestRecent": "Hung 70%",
-    "highestSolo": "Thien Diamond IV 77 LP",
-    "highestFlex": "Hung Diamond I 67 LP",
-    "worstSolo": "Huy 51%"
+    "bestRecent": "Vua B\u1ecbp Gia Lai#7777 70%",
+    "highestSolo": "Tian laoshi#2252 Diamond IV 77 LP",
+    "highestFlex": "Vua B\u1ecbp Gia Lai#7777 Diamond I 67 LP",
+    "worstSolo": "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207 51%"
   }
 }

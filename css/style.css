@@ -500,27 +500,6 @@ h3 {
   line-height: 1.15;
 }
 
-.sync-icon {
-  position: relative;
-  width: 15px;
-  height: 15px;
-  border: 1px solid currentColor;
-  border-left-color: transparent;
-  border-radius: 50%;
-}
-
-.sync-icon::after {
-  position: absolute;
-  right: -2px;
-  top: 1px;
-  width: 5px;
-  height: 5px;
-  border-top: 1px solid currentColor;
-  border-right: 1px solid currentColor;
-  content: "";
-  transform: rotate(28deg);
-}
-
 .league-ranks {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -723,9 +702,11 @@ h3 {
 }
 
 .champion-avatar img {
-  width: 100%;
-  height: 100%;
+  display: block;
+  width: 124%;
+  height: 124%;
   object-fit: cover;
+  object-position: center;
 }
 
 .player-topline,

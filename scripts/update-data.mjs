@@ -10,10 +10,10 @@ const OUTPUT_PATH = path.resolve("data/rift-lab.json");
 const USE_SAMPLE = process.argv.includes("--sample");
 
 const TRACKED_PLAYERS = [
-  { name: "Nguyen", riotName: "Road to the Top", tag: "A1E" },
-  { name: "Hung", riotName: "Vua Bịp Gia Lai", tag: "7777" },
-  { name: "Thien", riotName: "Tian laoshi", tag: "2252" },
-  { name: "Huy", riotName: "Hốc Văn Trưởng", tag: "1207" }
+  { name: "Road to the Top#A1E", riotName: "Road to the Top", tag: "A1E" },
+  { name: "Vua B\u1ecbp Gia Lai#7777", riotName: "Vua B\u1ecbp Gia Lai", tag: "7777" },
+  { name: "Tian laoshi#2252", riotName: "Tian laoshi", tag: "2252" },
+  { name: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207", riotName: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng", tag: "1207" }
 ];
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
