@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="rift-lab-api" content="">
     <title>Rift Lab | A1 eSports</title>
-    <link rel="stylesheet" href="css/style.css?v=20260523-16">
+    <link rel="stylesheet" href="css/style.css?v=20260523-17">
     <style>
       .team-hero {
         grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
@@ -314,6 +314,12 @@
         <a href="coach.html" data-nav="coach">Coach</a>
         <a href="matches.html" data-nav="matches">Matches</a>
       </nav>
+      <label class="header-season-control">
+        <span>Season</span>
+        <select data-global-season-select>
+          <option>Loading seasons</option>
+        </select>
+      </label>
     </header>
 
     <main>
@@ -328,12 +334,6 @@
           </div>
         </div>
         <aside class="team-hero-card" aria-label="Team seasonal performance summary">
-          <div class="season-control hero-season-control" aria-label="Season selector">
-            <label for="season-select">Season</label>
-            <select id="season-select" data-season-select>
-              <option>Loading seasons</option>
-            </select>
-          </div>
           <div class="team-hero-summary" data-team-hero>
             <div class="team-scoreboard">
               <div class="team-score-main">
@@ -366,10 +366,11 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-16"></script>
-    <script src="js/app.js?v=20260523-16"></script>
+    <script src="js/config.example.js?v=20260523-17"></script>
+    <script src="js/app.js?v=20260523-17"></script>
     <script>
       (() => {
+        const SEASON_STORAGE_KEY = "riftLabSeasonKey";
         let lastSignature = "";
         let selectedSeasonKey = "";
 
@@ -385,6 +386,14 @@
         function num(value) {
           const parsed = Number(value);
           return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function safeStorageGet(key) {
+          try {
+            return window.localStorage ? window.localStorage.getItem(key) : "";
+          } catch (error) {
+            return "";
+          }
         }
 
         function pct(value) {
@@ -403,6 +412,24 @@
           const wins = rows.filter((row) => row.result === "Win").length;
           const losses = rows.length - wins;
           return { games: rows.length, wins, losses, wr: rows.length ? (wins / rows.length) * 100 : 0 };
+        }
+
+        function rankStat(data, queueId) {
+          const total = (data.players || []).reduce((sum, player) => {
+            if (queueId === 420) {
+              sum.wins += num(player.soloWins);
+              sum.losses += num(player.soloLosses);
+            } else if (queueId === 440) {
+              sum.wins += num(player.flexWins);
+              sum.losses += num(player.flexLosses);
+            } else {
+              sum.wins += num(player.soloWins) + num(player.flexWins);
+              sum.losses += num(player.soloLosses) + num(player.flexLosses);
+            }
+            return sum;
+          }, { wins: 0, losses: 0 });
+          const games = total.wins + total.losses;
+          return { games, wins: total.wins, losses: total.losses, wr: games ? (total.wins / games) * 100 : 0 };
         }
 
         function seasonOf(dateLike) {
@@ -488,23 +515,24 @@
         }
 
         function renderSeasonSelect(seasons) {
-          const select = document.querySelector("[data-season-select]");
-          if (!select) return seasons[0];
-          const currentValue = selectedSeasonKey || select.value || seasons[0]?.key || "";
-          select.innerHTML = seasons.map((season) => `<option value="${escapeHtml(season.key)}">${escapeHtml(`${season.label} (${season.range})`)}</option>`).join("");
+          const currentValue = selectedSeasonKey ||
+            window.RIFT_LAB_SELECTED_SEASON ||
+            safeStorageGet(SEASON_STORAGE_KEY) ||
+            seasons[0]?.key ||
+            "";
           selectedSeasonKey = seasons.some((season) => season.key === currentValue) ? currentValue : seasons[0]?.key || "";
-          select.value = selectedSeasonKey;
           return seasons.find((season) => season.key === selectedSeasonKey) || seasons[0];
         }
 
-        function renderMetrics(season, matches) {
+        function renderMetrics(season, matches, data, useRankTotals) {
           const node = document.querySelector("[data-home-metrics]");
           if (!node) return;
-          const s = stat(matches);
-          const solo = stat(matches.filter((match) => Number(match.queueId) === 420));
-          const flex = stat(matches.filter((match) => Number(match.queueId) === 440));
+          const s = useRankTotals ? rankStat(data) : stat(matches);
+          const solo = useRankTotals ? rankStat(data, 420) : stat(matches.filter((match) => Number(match.queueId) === 420));
+          const flex = useRankTotals ? rankStat(data, 440) : stat(matches.filter((match) => Number(match.queueId) === 440));
+          const source = useRankTotals ? "current ranked account totals" : `${season.label} · imported match rows`;
           node.innerHTML = [
-            metricCard("Season Games", String(s.games), `${season.label} · ${season.range}`),
+            metricCard("Season Games", String(s.games), source),
             metricCard("Season Win Rate", pct(s.wr), `${s.wins}W-${s.losses}L`),
             metricCard("Solo/Duo", pct(solo.wr), `${solo.wins}W-${solo.losses}L`),
             metricCard("Flex", pct(flex.wr), `${flex.wins}W-${flex.losses}L`),
@@ -513,20 +541,21 @@
           ].join("");
         }
 
-        function renderHero(season, matches) {
+        function renderHero(season, matches, data, useRankTotals) {
           const node = document.querySelector("[data-team-hero]");
           if (!node) return;
-          const s = stat(matches);
+          const s = useRankTotals ? rankStat(data) : stat(matches);
           const roles = groupBy(matches, (match) => roleLabel(match.role));
           const queues = groupBy(matches, (match) => queueLabel(match.queueId));
           const topRole = roles[0] ? `${roles[0][0]} (${roles[0][1].length})` : "No role data";
           const topQueue = queues[0] ? `${queues[0][0]} (${queues[0][1].length})` : "No queue data";
+          const totalLabel = useRankTotals ? "ranked account games" : "imported seasonal ranked games";
           node.innerHTML = `
             <div class="team-scoreboard">
               <div class="team-score-main">
                 <span>${escapeHtml(`${season.label} · ${season.range}`)}</span>
                 <strong>${escapeHtml(pct(s.wr))}</strong>
-                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} seasonal ranked games`)}</small>
+                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} ${totalLabel}`)}</small>
               </div>
               <div class="team-score-grid">
                 <div class="team-score-item"><span>Avg KDA</span><strong>${escapeHtml(fmt(avg(matches, "kda"), 2))}</strong><small>season average</small></div>
@@ -699,23 +728,24 @@
           const seasons = seasonsFrom(allMatches);
           const season = renderSeasonSelect(seasons);
           const matches = matchesForSeason(allMatches, season);
-          const signature = `${season.key}|${allMatches.length}|${allMatches[0]?.matchId || ""}|${allMatches[0]?.gameStart || ""}`;
+          const useRankTotals = season.key === seasons[0]?.key;
+          const rankSignature = (data.players || []).map((player) => {
+            return [player.name, player.soloWins, player.soloLosses, player.flexWins, player.flexLosses].join(":");
+          }).join("|");
+          const signature = `${season.key}|${rankSignature}|${allMatches.length}|${allMatches[0]?.matchId || ""}|${allMatches[0]?.gameStart || ""}`;
           if (signature === lastSignature) return;
           lastSignature = signature;
-          renderHero(season, matches);
-          renderMetrics(season, matches);
+          renderHero(season, matches, data, useRankTotals);
+          renderMetrics(season, matches, data, useRankTotals);
           renderCharts(season, matches, allMatches);
         }
 
         function boot() {
-          const select = document.querySelector("[data-season-select]");
-          if (select) {
-            select.addEventListener("change", () => {
-              selectedSeasonKey = select.value;
-              lastSignature = "";
-              render();
-            });
-          }
+          window.addEventListener("rift-lab-season-change", (event) => {
+            selectedSeasonKey = event.detail?.season?.key || window.RIFT_LAB_SELECTED_SEASON || "";
+            lastSignature = "";
+            render();
+          });
           [0, 250, 750, 1500].forEach((delay) => setTimeout(render, delay));
           new MutationObserver(() => requestAnimationFrame(render)).observe(document.body, { childList: true, subtree: true });
         }

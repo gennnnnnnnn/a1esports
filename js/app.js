@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "riftLabDataUrl";
+  const SEASON_STORAGE_KEY = "riftLabSeasonKey";
   const PLAYER_QUEUE = { value: "all" };
   const MATCH_FILTERS = { queue: "all", champion: "", player: "all" };
   const NOTE_FILTERS = { search: "" };
@@ -297,11 +298,14 @@
     }
 
     window.RIFT_LAB_DATA = payload;
+    window.RIFT_LAB_GET_ACTIVE_MATCHES = () => activeSeasonMatches(window.RIFT_LAB_DATA || payload);
     renderStatus(mode, errorMessage);
+    setupSeasonControls(payload);
     renderShared(payload);
     renderCurrentPage(payload);
     renderMatchPlayerFilter(payload);
     bindPageControls(payload);
+    dispatchSeasonChange(payload);
   }
 
   function setActiveNav() {
@@ -546,6 +550,101 @@
     };
   }
 
+  function setupSeasonControls(data) {
+    const controls = document.querySelectorAll("[data-global-season-select]");
+    if (!controls.length) return;
+
+    const seasons = seasonsFromMatches(data.matches);
+    const stored = storageGet(SEASON_STORAGE_KEY);
+    const selected = seasons.some((season) => season.key === stored) ? stored : seasons[0]?.key || "";
+    setActiveSeason(selected, seasons);
+
+    controls.forEach((select) => {
+      select.innerHTML = seasons.map((season) => {
+        return `<option value="${escapeHtml(season.key)}">${escapeHtml(`${season.label} (${season.range})`)}</option>`;
+      }).join("");
+      select.value = selected;
+      select.addEventListener("change", () => {
+        setActiveSeason(select.value, seasons);
+        storageSet(SEASON_STORAGE_KEY, select.value);
+        controls.forEach((other) => {
+          if (other !== select) other.value = select.value;
+        });
+        renderCurrentPage(data);
+        renderMatchPlayerFilter(data);
+        dispatchSeasonChange(data);
+      });
+    });
+  }
+
+  function setActiveSeason(key, seasons) {
+    const season = seasons.find((item) => item.key === key) || seasons[0] || null;
+    window.RIFT_LAB_SELECTED_SEASON = season ? season.key : "";
+    window.RIFT_LAB_SELECTED_SEASON_DETAIL = season;
+  }
+
+  function dispatchSeasonChange(data) {
+    window.dispatchEvent(new CustomEvent("rift-lab-season-change", {
+      detail: {
+        season: activeSeason(data),
+        matches: activeSeasonMatches(data)
+      }
+    }));
+  }
+
+  function activeSeason(data) {
+    const seasons = seasonsFromMatches(data.matches || []);
+    return seasons.find((season) => season.key === window.RIFT_LAB_SELECTED_SEASON) || seasons[0] || null;
+  }
+
+  function activeSeasonMatches(data) {
+    const season = activeSeason(data);
+    if (!season) return data.matches || [];
+    return matchesForSeason(data.matches || [], season);
+  }
+
+  function seasonsFromMatches(matches) {
+    const byKey = new Map();
+    (matches || []).forEach((match) => {
+      if (!match || !match.gameStart) return;
+      const season = seasonOf(match.gameStart);
+      if (!byKey.has(season.key)) byKey.set(season.key, season);
+    });
+    if (!byKey.size) {
+      const fallback = seasonOf(new Date());
+      byKey.set(fallback.key, fallback);
+    }
+    return [...byKey.values()].sort((a, b) => b.start - a.start);
+  }
+
+  function seasonOf(dateLike) {
+    const date = new Date(dateLike);
+    const safe = Number.isNaN(date.getTime()) ? new Date() : date;
+    const year = safe.getUTCFullYear();
+    const month = safe.getUTCMonth();
+    const block = month < 4 ? 1 : month < 8 ? 2 : 3;
+    const startMonth = block === 1 ? 0 : block === 2 ? 4 : 8;
+    const endMonth = block === 1 ? 4 : block === 2 ? 8 : 12;
+    const start = new Date(Date.UTC(year, startMonth, 1));
+    const end = new Date(Date.UTC(year, endMonth, 1));
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    return {
+      key: `${year}-S${block}`,
+      label: `${year} Season ${block}`,
+      range: `${monthNames[startMonth]}-${monthNames[endMonth - 1]}`,
+      start,
+      end
+    };
+  }
+
+  function matchesForSeason(matches, season) {
+    return (matches || []).filter((match) => {
+      const date = new Date(match.gameStart);
+      return !Number.isNaN(date.getTime()) && date >= season.start && date < season.end;
+    });
+  }
+
   function renderShared(data) {
     document.querySelectorAll("[data-updated-at]").forEach((node) => {
       node.textContent = `Updated ${formatDateTime(data.updatedAt)}`;
@@ -636,7 +735,7 @@
     if (!node) return;
 
     const championTerm = MATCH_FILTERS.champion.trim().toLowerCase();
-    const matches = data.matches.filter((match) => {
+    const matches = activeSeasonMatches(data).filter((match) => {
       const queueOk = MATCH_FILTERS.queue === "all" || String(match.queueId) === MATCH_FILTERS.queue;
       const championOk = !championTerm || match.champion.toLowerCase().includes(championTerm);
       const playerOk = MATCH_FILTERS.player === "all" || normalizeKey(match.player) === MATCH_FILTERS.player;
@@ -808,7 +907,7 @@
 
   function playerLastSeen(playerName) {
     const data = window.RIFT_LAB_DATA || {};
-    const latestMatchTime = (data.matches || [])
+    const latestMatchTime = activeSeasonMatches(data)
       .filter((match) => normalizeKey(match.player) === normalizeKey(playerName))
       .map((match) => new Date(match.gameStart))
       .filter((date) => !Number.isNaN(date.getTime()))
@@ -870,7 +969,7 @@
 
   function playerInsights(playerName) {
     const data = window.RIFT_LAB_DATA || {};
-    const matches = (data.matches || [])
+    const matches = activeSeasonMatches(data)
       .filter((match) => normalizeKey(match.player) === normalizeKey(playerName))
       .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime())
       .slice(0, 20);
@@ -1043,15 +1142,15 @@
               <span class="queue-chip">${escapeHtml(match.queueLabel)}</span>
               ${match.role ? `<span class="role-chip">${escapeHtml(titleCase(match.role))}</span>` : ""}
             </div>
-            <time>${escapeHtml(formatDate(match.gameStart))}</time>
+            <time datetime="${escapeHtml(match.gameStart)}">${escapeHtml(formatGmt7DateTime(match.gameStart))}</time>
           </div>
           <p>${escapeHtml(match.riotId || publicPlayerLabel(match.player))}</p>
           <div class="match-stats">
             <div><span>KDA</span><strong>${escapeHtml(`${formatNumber(match.kills)}/${formatNumber(match.deaths)}/${formatNumber(match.assists)}`)}</strong></div>
             <div><span>KDA Ratio</span><strong>${escapeHtml(formatDecimal(match.kda))}</strong></div>
-            <div><span>CS/min</span><strong>${escapeHtml(formatDecimal(match.csMin))}</strong></div>
-            <div><span>Vision/min</span><strong>${escapeHtml(formatDecimal(match.visionMin))}</strong></div>
-            <div><span>Damage/min</span><strong>${escapeHtml(formatNumber(match.damageMin))}</strong></div>
+            <div><span>CS</span><strong>${escapeHtml(formatNumber(match.cs))}</strong></div>
+            <div><span>Vision</span><strong>${escapeHtml(formatNumber(match.visionScore))}</strong></div>
+            <div><span>Damage</span><strong>${escapeHtml(formatNumber(match.damage))}</strong></div>
           </div>
           <div class="match-loadout">
             <span class="match-loadout-label">Final Build</span>
@@ -1077,8 +1176,18 @@
 
   function playerSummary(playerName) {
     const data = window.RIFT_LAB_DATA;
-    if (!data || !data.summaryRows) return null;
-    return data.summaryRows.find((row) => normalizeKey(row.player) === normalizeKey(playerName)) || null;
+    if (!data) return null;
+    const matches = activeSeasonMatches(data).filter((match) => normalizeKey(match.player) === normalizeKey(playerName));
+    if (!matches.length) return null;
+    const wins = matches.filter((match) => match.result === "Win").length;
+    const losses = matches.length - wins;
+    return {
+      player: playerName,
+      games: matches.length,
+      wins,
+      losses,
+      winRate: normalizePercent("", wins, losses)
+    };
   }
 
   function read(source, labels) {

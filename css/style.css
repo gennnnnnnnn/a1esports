@@ -44,7 +44,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -133,6 +134,38 @@ button {
 .site-nav a.is-active {
   background: rgba(49, 215, 255, 0.11);
   color: var(--text);
+}
+
+.header-season-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 5px 6px 5px 11px;
+  border: 1px solid rgba(49, 215, 255, 0.58);
+  border-radius: var(--radius);
+  background: rgba(18, 22, 32, 0.86);
+  box-shadow: 0 0 0 1px rgba(49, 215, 255, 0.08);
+}
+
+.header-season-control span {
+  color: #b8d7ff;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.header-season-control select {
+  width: min(250px, 28vw);
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: #20242d;
+  color: var(--text);
+  color-scheme: dark;
+  font-weight: 850;
+  padding: 0 9px;
 }
 
 .hero {
@@ -417,6 +450,10 @@ h3 {
   color: #fff7df;
 }
 
+.league-player-card .league-card-header {
+  display: none;
+}
+
 .lol-brand {
   display: inline-flex;
   align-items: center;
@@ -526,14 +563,16 @@ h3 {
 
 .rank-main {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-columns: 1fr;
   align-items: center;
+  justify-items: center;
   gap: 10px;
   min-height: 64px;
   padding: 9px;
   border: 1px solid #454a52;
   border-radius: 4px;
   background: #1f2124;
+  text-align: center;
 }
 
 .rank-main strong,
@@ -1198,6 +1237,14 @@ h3 {
 
   .site-nav {
     overflow-x: auto;
+  }
+
+  .header-season-control {
+    width: 100%;
+  }
+
+  .header-season-control select {
+    width: 100%;
   }
 
   .hero,

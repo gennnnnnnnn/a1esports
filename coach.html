@@ -6,7 +6,7 @@
     <meta name="rift-lab-api" content="">
     <title>Coach | Rift Lab</title>
     <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
-    <link rel="stylesheet" href="css/style.css?v=20260523-16">
+    <link rel="stylesheet" href="css/style.css?v=20260523-17">
     <style>
       .notes-grid.coach-deep-list {
         grid-template-columns: 1fr;
@@ -255,6 +255,12 @@
         <a href="coach.html" data-nav="coach">Coach</a>
         <a href="matches.html" data-nav="matches">Matches</a>
       </nav>
+      <label class="header-season-control">
+        <span>Season</span>
+        <select data-global-season-select>
+          <option>Loading seasons</option>
+        </select>
+      </label>
     </header>
 
     <main class="shell page-stack">
@@ -280,8 +286,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-16"></script>
-    <script src="js/app.js?v=20260523-16"></script>
+    <script src="js/config.example.js?v=20260523-17"></script>
+    <script src="js/app.js?v=20260523-17"></script>
     <script>
       (() => {
         const LIMIT = 20;
@@ -334,7 +340,8 @@
 
         function playerMatches(player) {
           const data = window.RIFT_LAB_DATA || {};
-          return (data.matches || [])
+          const matches = window.RIFT_LAB_GET_ACTIVE_MATCHES ? window.RIFT_LAB_GET_ACTIVE_MATCHES() : (data.matches || []);
+          return matches
             .filter((match) => key(match.player) === key(player.name) || key(match.riotId) === key(riotId(player)))
             .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime())
             .slice(0, LIMIT);
@@ -679,7 +686,7 @@
             return key(payload).includes(term);
           });
 
-          const signature = `${term}|${players.map((player) => player.name).join("|")}|${(data.matches || []).length}`;
+          const signature = `${window.RIFT_LAB_SELECTED_SEASON || ""}|${term}|${players.map((player) => player.name).join("|")}|${(data.matches || []).length}`;
           if (signature === lastSignature && node.classList.contains("coach-deep-list")) return;
           lastSignature = signature;
 
@@ -694,6 +701,10 @@
         function boot() {
           const search = document.querySelector("[data-note-search]");
           if (search) search.addEventListener("input", () => setTimeout(renderDeepCoach, 0));
+          window.addEventListener("rift-lab-season-change", () => {
+            lastSignature = "";
+            renderDeepCoach();
+          });
 
           const observer = new MutationObserver(() => {
             if (!rendering) requestAnimationFrame(renderDeepCoach);
