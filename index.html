@@ -8,8 +8,12 @@
     <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
     <link rel="preconnect" href="https://raw.communitydragon.org">
     <link rel="preconnect" href="https://opgg-static.akamaized.net">
-    <link rel="stylesheet" href="css/style.css?v=20260523-8">
+    <link rel="stylesheet" href="css/style.css?v=20260523-10">
     <style>
+      .home-player-only {
+        grid-template-columns: 1fr;
+      }
+
       .league-player-card .lol-brand > span:last-child,
       .league-player-card .peak-badge {
         display: none !important;
@@ -138,7 +142,7 @@
         <div class="hero-copy">
           <p class="eyebrow">VN2 ranked squad analytics</p>
           <h1>A1 eSports Rift Lab</h1>
-          <p class="hero-lede">Live player ranks, recent form, and coach notes from the squad sheet.</p>
+          <p class="hero-lede">Live player ranks, recent form, and ranked match analytics.</p>
           <div class="hero-actions">
             <a class="button primary" href="players.html">View Players</a>
             <a class="button ghost" href="matches.html">Recent Matches</a>
@@ -161,7 +165,7 @@
 
       <section class="shell metrics-grid" data-home-metrics aria-label="Dashboard metrics"></section>
 
-      <section class="shell split-section">
+      <section class="shell split-section home-player-only">
         <div>
           <div class="section-heading">
             <p class="eyebrow">Squad</p>
@@ -169,13 +173,6 @@
           </div>
           <div class="cards-grid compact" data-home-players></div>
         </div>
-        <aside class="side-panel">
-          <div class="section-heading tight">
-            <p class="eyebrow">Coach</p>
-            <h2>Latest Notes</h2>
-          </div>
-          <div data-home-notes></div>
-        </aside>
       </section>
     </main>
 
@@ -184,8 +181,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-8"></script>
-    <script src="js/app.js?v=20260523-8"></script>
+    <script src="js/config.example.js?v=20260523-10"></script>
+    <script src="js/app.js?v=20260523-10"></script>
     <script>
       (() => {
         const RECENT_LIMIT = 20;
