@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="rift-lab-api" content="">
     <title>Rift Lab | A1 eSports</title>
-    <link rel="stylesheet" href="css/style.css?v=20260523-13">
+    <link rel="stylesheet" href="css/style.css?v=20260523-14">
     <style>
       .team-hero {
         grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
@@ -24,9 +24,18 @@
 
       .team-hero-card {
         display: grid;
-        align-content: center;
+        grid-template-rows: auto minmax(0, 1fr);
+        align-content: stretch;
+        align-items: stretch;
+        gap: 18px;
         min-height: 500px;
         padding: 22px;
+      }
+
+      .team-hero-summary {
+        display: grid;
+        align-content: center;
+        min-height: 0;
       }
 
       .season-control {
@@ -35,6 +44,11 @@
         align-items: center;
         gap: 10px;
         margin: 18px 0;
+      }
+
+      .hero-season-control {
+        justify-self: start;
+        margin: 0;
       }
 
       .season-control label {
@@ -47,6 +61,7 @@
 
       .season-control select {
         min-height: 38px;
+        min-width: 220px;
         padding: 0 12px;
         border: 1px solid var(--line);
         border-radius: 6px;
@@ -193,11 +208,20 @@
 
       .team-bar-row {
         display: grid;
-        grid-template-columns: 92px minmax(0, 1fr) 86px;
+        grid-template-columns: minmax(126px, max-content) minmax(0, 1fr) max-content;
         gap: 10px;
         align-items: center;
         color: #c6d0df;
         font-size: 0.88rem;
+      }
+
+      .team-bar-row strong,
+      .team-bar-row > span:last-child {
+        white-space: nowrap;
+      }
+
+      .team-bar-row > span:last-child {
+        text-align: right;
       }
 
       .team-bar-track {
@@ -263,7 +287,7 @@
         }
 
         .team-bar-row {
-          grid-template-columns: 78px minmax(0, 1fr) 72px;
+          grid-template-columns: minmax(118px, max-content) minmax(0, 1fr) max-content;
         }
       }
 
@@ -303,25 +327,26 @@
             <a class="button ghost" href="matches.html">Recent Matches</a>
           </div>
         </div>
-        <aside class="team-hero-card" data-team-hero aria-label="Team seasonal performance summary">
-          <div class="team-scoreboard">
-            <div class="team-score-main">
-              <span>Season win rate</span>
-              <strong>Loading</strong>
-              <small>Waiting for ranked data</small>
+        <aside class="team-hero-card" aria-label="Team seasonal performance summary">
+          <div class="season-control hero-season-control" aria-label="Season selector">
+            <label for="season-select">Season</label>
+            <select id="season-select" data-season-select>
+              <option>Loading seasons</option>
+            </select>
+          </div>
+          <div class="team-hero-summary" data-team-hero>
+            <div class="team-scoreboard">
+              <div class="team-score-main">
+                <span>Season win rate</span>
+                <strong>Loading</strong>
+                <small>Waiting for ranked data</small>
+              </div>
             </div>
           </div>
         </aside>
       </section>
 
       <section class="shell status-slot" data-status></section>
-
-      <section class="shell season-control" aria-label="Season selector">
-        <label for="season-select">Season</label>
-        <select id="season-select" data-season-select>
-          <option>Loading seasons</option>
-        </select>
-      </section>
 
       <section class="shell metrics-grid team-metrics" data-home-metrics aria-label="Team seasonal metrics"></section>
 
@@ -341,8 +366,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-13"></script>
-    <script src="js/app.js?v=20260523-13"></script>
+    <script src="js/config.example.js?v=20260523-14"></script>
+    <script src="js/app.js?v=20260523-14"></script>
     <script>
       (() => {
         let lastSignature = "";
@@ -624,7 +649,7 @@
 
         function seasonComparison(allMatches) {
           const seasons = seasonsFrom(allMatches).slice().reverse();
-          const groups = seasons.map((season) => [season.label.replace(" ", "\n"), matchesForSeason(allMatches, season)]);
+          const groups = seasons.map((season) => [season.label, matchesForSeason(allMatches, season)]);
           return bars(groups, (rows, s) => `${pct(s.wr)} · ${rows.length}`);
         }
 
@@ -663,12 +688,6 @@
               <h3>Available Seasons</h3>
               <p>One calendar year is split into three seasons: Jan-Apr, May-Aug, and Sep-Dec.</p>
               ${seasonComparison(allMatches)}
-            </article>
-            <article class="team-chart-card" style="grid-column: 1 / -1;">
-              <span class="chart-kicker">Diagnostics</span>
-              <h3>Latest Seasonal Match Snapshot</h3>
-              <p>The newest imported games inside the selected season.</p>
-              ${table(matches)}
             </article>
           `;
         }
