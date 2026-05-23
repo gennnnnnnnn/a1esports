@@ -5,6 +5,7 @@ const ACCOUNT_REGION = "asia";
 const MATCH_REGION = "sea";
 const PLATFORM_REGION = "vn2";
 const MATCH_COUNT_PER_QUEUE = Number(process.env.MATCH_COUNT_PER_QUEUE || 20);
+const RECENT_MATCH_LIMIT = Number(process.env.RECENT_MATCH_LIMIT || 20);
 const RANKED_QUEUES = [420, 440];
 const OUTPUT_PATH = path.resolve("data/rift-lab.json");
 const USE_SAMPLE = process.argv.includes("--sample");
@@ -67,7 +68,8 @@ async function buildRiftLabData() {
       accountRegion: ACCOUNT_REGION,
       matchRegion: MATCH_REGION,
       platformRegion: PLATFORM_REGION,
-      rankedQueues: RANKED_QUEUES
+      rankedQueues: RANKED_QUEUES,
+      recentMatchLimit: RECENT_MATCH_LIMIT
     },
     players,
     summaryRows,
@@ -221,7 +223,7 @@ function buildSummaryRows(players, matches) {
   return players.map((player) => {
     const recent = matches
       .filter((match) => match.player === player.name)
-      .slice(0, 10);
+      .slice(0, RECENT_MATCH_LIMIT);
     const wins = recent.filter((match) => match.result === "Win").length;
     const losses = recent.length - wins;
 
@@ -239,13 +241,13 @@ function buildLatestNotes(players, matches) {
   return players.map((player) => {
     const recent = matches
       .filter((match) => match.player === player.name)
-      .slice(0, 10);
+      .slice(0, RECENT_MATCH_LIMIT);
 
     if (!recent.length) {
       return {
         date: new Date().toISOString(),
         player: player.name,
-        scope: "Last 10 ranked games",
+        scope: `Last ${RECENT_MATCH_LIMIT} ranked games`,
         summary: `${player.name}: no ranked solo/flex matches imported yet.`,
         strengths: "No match sample yet.",
         weaknesses: "No match data to review.",
@@ -262,7 +264,7 @@ function buildLatestNotes(players, matches) {
     return {
       date: new Date().toISOString(),
       player: player.name,
-      scope: "Last 10 ranked games",
+      scope: `Last ${RECENT_MATCH_LIMIT} ranked games`,
       summary: `${player.name}: last ${recent.length} games, ${wins}W-${recent.length - wins}L, avg KDA ${avgKda.toFixed(2)}, CS/min ${avgCsMin.toFixed(2)}, vision/min ${avgVisionMin.toFixed(2)}.`,
       strengths: avgKda >= 3 ? "Good fight conversion and survival." : "Some useful moments, but consistency is not there yet.",
       weaknesses: avgDeaths >= 6 ? "Death count is too high." : "Main issue is likely macro timing, not pure mechanics.",
