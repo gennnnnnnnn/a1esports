@@ -6,117 +6,248 @@
     <meta name="rift-lab-api" content="">
     <title>Rift Lab | A1 eSports</title>
     <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
-    <link rel="preconnect" href="https://raw.communitydragon.org">
-    <link rel="preconnect" href="https://opgg-static.akamaized.net">
-    <link rel="stylesheet" href="css/style.css?v=20260523-10">
+    <link rel="stylesheet" href="css/style.css?v=20260523-11">
     <style>
-      .home-player-only {
-        grid-template-columns: 1fr;
+      .team-hero {
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
       }
 
-      .league-player-card .lol-brand > span:last-child,
-      .league-player-card .peak-badge {
-        display: none !important;
+      .team-hero-card,
+      .team-chart-card {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 18% 0%, rgba(49, 215, 255, 0.13), transparent 18rem),
+          radial-gradient(circle at 100% 10%, rgba(242, 193, 91, 0.11), transparent 15rem),
+          rgba(18, 22, 32, 0.86);
+        box-shadow: var(--shadow);
       }
 
-      .league-player-card .league-card-header {
-        min-height: 34px;
-        padding: 7px 13px;
-      }
-
-      .league-player-card .rank-main {
-        grid-template-columns: 88px minmax(0, 1fr);
-        min-height: 78px;
-        padding: 5px 9px 5px 0;
+      .team-hero-card {
+        display: grid;
+        align-content: center;
+        min-height: 500px;
+        padding: 22px;
         overflow: hidden;
       }
 
-      .league-player-card .rank-emblem,
-      .league-player-card .rank-emblem.iron,
-      .league-player-card .rank-emblem.bronze,
-      .league-player-card .rank-emblem.silver,
-      .league-player-card .rank-emblem.gold,
-      .league-player-card .rank-emblem.platinum,
-      .league-player-card .rank-emblem.emerald,
-      .league-player-card .rank-emblem.diamond,
-      .league-player-card .rank-emblem.master,
-      .league-player-card .rank-emblem.grandmaster,
-      .league-player-card .rank-emblem.challenger,
-      .league-player-card .rank-emblem.unranked {
-        width: 88px;
-        height: 88px;
-        margin: -10px auto;
-        clip-path: none;
-        background: transparent !important;
-        box-shadow: none;
-        overflow: visible;
+      .team-scoreboard {
+        display: grid;
+        gap: 12px;
       }
 
-      .league-player-card .rank-emblem img {
+      .team-score-main {
+        padding: 18px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        background: rgba(7, 8, 12, 0.52);
+      }
+
+      .team-score-main span,
+      .team-score-item span,
+      .team-chart-card span.chart-kicker {
         display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        transform: scale(1.18);
-        transform-origin: center;
-        filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.52));
-      }
-
-      .league-player-card .lane-badge.has-icon {
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: 17px 17px;
-        color: transparent;
-        font-size: 0;
-      }
-
-      .league-player-card .lane-badge.has-icon.active {
-        background-color: rgba(220, 171, 64, 0.12);
-      }
-
-      .league-player-card .form-radar {
-        margin-top: 11px;
-        padding: 8px 9px 6px;
-        border: 1px solid #454a52;
-        border-radius: 4px;
-        background: #1f2124;
-      }
-
-      .league-player-card .form-radar-header {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        color: #aeb5bf;
-        font-size: 0.66rem;
-        font-weight: 950;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
       }
 
-      .league-player-card .form-radar svg {
+      .team-score-main strong {
         display: block;
-        width: 100%;
-        height: 116px;
-        margin-top: 2px;
+        margin-top: 6px;
+        font-size: clamp(2.4rem, 5vw, 4.1rem);
+        line-height: 1;
       }
 
-      .league-player-card .radar-grid,
-      .league-player-card .radar-axis {
+      .team-score-main small,
+      .team-score-item small {
+        display: block;
+        margin-top: 7px;
+        color: var(--muted);
+      }
+
+      .team-score-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .team-score-item {
+        min-height: 92px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .team-score-item strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.35rem;
+      }
+
+      .team-dashboard-section {
+        margin: 10px auto 56px;
+      }
+
+      .team-dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .team-chart-card {
+        min-width: 0;
+        padding: 16px;
+      }
+
+      .team-chart-card h3 {
+        margin-top: 6px;
+        font-size: 1.05rem;
+      }
+
+      .team-chart-card p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .team-chart-card svg {
+        display: block;
+        width: 100%;
+        min-height: 220px;
+        margin-top: 12px;
+      }
+
+      .chart-grid-line,
+      .chart-axis-line,
+      .radar-grid,
+      .radar-axis {
         fill: none;
-        stroke: rgba(174, 181, 191, 0.32);
+        stroke: rgba(174, 181, 191, 0.28);
         stroke-width: 1;
       }
 
-      .league-player-card .radar-area {
-        fill: rgba(49, 215, 255, 0.25);
-        stroke: rgba(91, 242, 168, 0.9);
+      .chart-line {
+        fill: none;
+        stroke: rgba(91, 242, 168, 0.95);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .chart-fill {
+        fill: rgba(49, 215, 255, 0.14);
+      }
+
+      .chart-dot {
+        fill: #5bf2a8;
+        stroke: #081016;
         stroke-width: 2;
       }
 
-      .league-player-card .radar-label {
+      .chart-label,
+      .radar-label {
         fill: #aeb5bf;
-        font-size: 8px;
+        font-size: 10px;
         font-weight: 800;
-        text-anchor: middle;
+      }
+
+      .radar-area {
+        fill: rgba(49, 215, 255, 0.23);
+        stroke: rgba(91, 242, 168, 0.95);
+        stroke-width: 2.5;
+      }
+
+      .team-bars {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .team-bar-row {
+        display: grid;
+        grid-template-columns: 92px minmax(0, 1fr) 86px;
+        gap: 10px;
+        align-items: center;
+        color: #c6d0df;
+        font-size: 0.88rem;
+      }
+
+      .team-bar-track {
+        height: 13px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .team-bar-fill {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, rgba(49, 215, 255, 0.95), rgba(91, 242, 168, 0.85));
+      }
+
+      .team-table {
+        width: 100%;
+        margin-top: 12px;
+        border-collapse: collapse;
+        color: #c6d0df;
+        font-size: 0.84rem;
+      }
+
+      .team-table th,
+      .team-table td {
+        padding: 8px 7px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: left;
+      }
+
+      .team-table th {
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .team-metrics {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+
+      @media (max-width: 980px) {
+        .team-hero,
+        .team-dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .team-hero-card {
+          min-height: 360px;
+        }
+
+        .team-metrics {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 700px) {
+        .team-score-grid,
+        .team-metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .team-bar-row {
+          grid-template-columns: 78px minmax(0, 1fr) 72px;
+        }
+      }
+
+      @media (max-width: 430px) {
+        .team-score-grid,
+        .team-metrics {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -138,41 +269,39 @@
     </header>
 
     <main>
-      <section class="hero shell">
+      <section class="hero shell team-hero">
         <div class="hero-copy">
           <p class="eyebrow">VN2 ranked squad analytics</p>
           <h1>A1 eSports Rift Lab</h1>
-          <p class="hero-lede">Live player ranks, recent form, and ranked match analytics.</p>
+          <p class="hero-lede">Team-level ranked performance, form trends, queue balance, and role distribution.</p>
           <div class="hero-actions">
-            <a class="button primary" href="players.html">View Players</a>
+            <a class="button primary" href="coach.html">Open Coach Board</a>
             <a class="button ghost" href="matches.html">Recent Matches</a>
           </div>
         </div>
-        <div class="hero-panel" aria-label="Rift Lab rank snapshot">
-          <div class="hero-art"></div>
-          <div class="hero-glass">
-            <span>Solo/Duo</span>
-            <strong data-field="highest-solo">Loading</strong>
+        <aside class="team-hero-card" data-team-hero aria-label="Team performance summary">
+          <div class="team-scoreboard">
+            <div class="team-score-main">
+              <span>Team win rate</span>
+              <strong>Loading</strong>
+              <small>Waiting for ranked data</small>
+            </div>
           </div>
-          <div class="hero-glass lower">
-            <span>Ranked Flex</span>
-            <strong data-field="highest-flex">Loading</strong>
-          </div>
-        </div>
+        </aside>
       </section>
 
       <section class="shell status-slot" data-status></section>
 
-      <section class="shell metrics-grid" data-home-metrics aria-label="Dashboard metrics"></section>
+      <section class="shell metrics-grid team-metrics" data-home-metrics aria-label="Team metrics"></section>
 
-      <section class="shell split-section home-player-only">
-        <div>
-          <div class="section-heading">
-            <p class="eyebrow">Squad</p>
-            <h2>Tracked Players</h2>
+      <section class="shell team-dashboard-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Team dashboard</p>
+            <h2>Squad Performance</h2>
           </div>
-          <div class="cards-grid compact" data-home-players></div>
         </div>
+        <div class="team-dashboard-grid" data-team-dashboard aria-label="Team charts"></div>
       </section>
     </main>
 
@@ -181,172 +310,299 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-10"></script>
-    <script src="js/app.js?v=20260523-10"></script>
+    <script src="js/config.example.js?v=20260523-11"></script>
+    <script src="js/app.js?v=20260523-11"></script>
     <script>
       (() => {
-        const RECENT_LIMIT = 20;
-        const TIERS = ["iron", "bronze", "silver", "gold", "platinum", "emerald", "diamond", "master", "grandmaster", "challenger"];
-        const LANE_ICONS = {
-          top: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-top.png",
-          jungle: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-jungle.png",
-          middle: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-middle.png",
-          bottom: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-bottom.png",
-          utility: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-utility.png"
-        };
+        const WINDOW = 40;
+        let lastSignature = "";
 
-        function key(value) {
-          return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        function escapeHtml(value) {
+          return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
         }
 
-        function riotId(player) {
-          return player && player.riotName && player.tag ? `${player.riotName}#${player.tag}` : (player?.name || "");
+        function num(value) {
+          const parsed = Number(value);
+          return Number.isFinite(parsed) ? parsed : 0;
         }
 
-        function rankSources(tier) {
-          return [
-            `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/images/${tier}.png`,
-            `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-${tier}.png`,
-            `https://opgg-static.akamaized.net/images/medals_new/${tier}.png`
-          ];
+        function pct(value) {
+          return `${Math.round(num(value))}%`;
         }
 
-        function setRankSource(img, tier, index = 0) {
-          const sources = rankSources(tier);
-          img.onerror = () => {
-            if (index + 1 < sources.length) setRankSource(img, tier, index + 1);
+        function fmt(value, digits = 1) {
+          return num(value).toFixed(digits).replace(/\.0+$/, "");
+        }
+
+        function avg(rows, field) {
+          return rows.length ? rows.reduce((sum, row) => sum + num(row[field]), 0) / rows.length : 0;
+        }
+
+        function stat(rows) {
+          const wins = rows.filter((row) => row.result === "Win").length;
+          const losses = rows.length - wins;
+          return { games: rows.length, wins, losses, wr: rows.length ? (wins / rows.length) * 100 : 0 };
+        }
+
+        function queueLabel(queueId) {
+          if (Number(queueId) === 420) return "Solo/Duo";
+          if (Number(queueId) === 440) return "Flex";
+          return "Other";
+        }
+
+        function roleLabel(role) {
+          const value = String(role || "").toLowerCase();
+          if (value.includes("top")) return "Top";
+          if (value.includes("jung")) return "Jungle";
+          if (value.includes("mid")) return "Mid";
+          if (value.includes("bot") || value.includes("bottom") || value.includes("adc")) return "Bot";
+          if (value.includes("util") || value.includes("sup")) return "Support";
+          return "Unknown";
+        }
+
+        function groupBy(rows, mapper) {
+          const map = new Map();
+          rows.forEach((row) => {
+            const label = mapper(row);
+            if (!label) return;
+            if (!map.has(label)) map.set(label, []);
+            map.get(label).push(row);
+          });
+          return [...map.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+        }
+
+        function latestMatches(data) {
+          return [...(data.matches || [])]
+            .filter((match) => match && match.gameStart)
+            .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
+        }
+
+        function metricCard(label, value, hint) {
+          return `
+            <article class="metric-card">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+              <small>${escapeHtml(hint)}</small>
+            </article>
+          `;
+        }
+
+        function renderMetrics(data, matches) {
+          const node = document.querySelector("[data-home-metrics]");
+          if (!node) return;
+          const recent = matches.slice(0, WINDOW);
+          const s = stat(recent);
+          const solo = stat(recent.filter((match) => Number(match.queueId) === 420));
+          const flex = stat(recent.filter((match) => Number(match.queueId) === 440));
+          node.innerHTML = [
+            metricCard("Recent Games", String(s.games), `Latest ${WINDOW} imported ranked games`),
+            metricCard("Team Win Rate", pct(s.wr), `${s.wins}W-${s.losses}L`),
+            metricCard("Solo/Duo", pct(solo.wr), `${solo.wins}W-${solo.losses}L`),
+            metricCard("Flex", pct(flex.wr), `${flex.wins}W-${flex.losses}L`),
+            metricCard("Avg KDA", fmt(avg(recent, "kda"), 2), "Team combat conversion"),
+            metricCard("Avg Vision/min", fmt(avg(recent, "visionMin"), 2), "Objective setup signal")
+          ].join("");
+        }
+
+        function renderHero(matches) {
+          const node = document.querySelector("[data-team-hero]");
+          if (!node) return;
+          const recent = matches.slice(0, WINDOW);
+          const s = stat(recent);
+          const roles = groupBy(recent, (match) => roleLabel(match.role));
+          const queues = groupBy(recent, (match) => queueLabel(match.queueId));
+          const topRole = roles[0] ? `${roles[0][0]} (${roles[0][1].length})` : "No role data";
+          const topQueue = queues[0] ? `${queues[0][0]} (${queues[0][1].length})` : "No queue data";
+          node.innerHTML = `
+            <div class="team-scoreboard">
+              <div class="team-score-main">
+                <span>Team win rate</span>
+                <strong>${escapeHtml(pct(s.wr))}</strong>
+                <small>${escapeHtml(`${s.wins}W-${s.losses}L across latest ${s.games} ranked games`)}</small>
+              </div>
+              <div class="team-score-grid">
+                <div class="team-score-item"><span>Avg KDA</span><strong>${escapeHtml(fmt(avg(recent, "kda"), 2))}</strong><small>team average</small></div>
+                <div class="team-score-item"><span>Damage/min</span><strong>${escapeHtml(String(Math.round(avg(recent, "damageMin"))))}</strong><small>team output</small></div>
+                <div class="team-score-item"><span>Main role sample</span><strong>${escapeHtml(topRole)}</strong><small>by recent games</small></div>
+                <div class="team-score-item"><span>Main queue sample</span><strong>${escapeHtml(topQueue)}</strong><small>by recent games</small></div>
+              </div>
+            </div>
+          `;
+        }
+
+        function lineChart(matches) {
+          const sample = matches.slice(0, WINDOW).reverse();
+          if (!sample.length) return '<p>No match data available for a trend chart yet.</p>';
+          const points = sample.map((_, index) => {
+            const block = sample.slice(Math.max(0, index - 4), index + 1);
+            return stat(block).wr;
+          });
+          const width = 420;
+          const height = 220;
+          const left = 36;
+          const right = 16;
+          const top = 18;
+          const bottom = 34;
+          const usableW = width - left - right;
+          const usableH = height - top - bottom;
+          const xy = (value, index) => {
+            const x = left + (points.length === 1 ? usableW : (index / (points.length - 1)) * usableW);
+            const y = top + (1 - value / 100) * usableH;
+            return [x, y];
           };
-          img.src = sources[index];
+          const polyline = points.map((value, index) => xy(value, index).join(",")).join(" ");
+          const area = `${left},${height - bottom} ${polyline} ${left + usableW},${height - bottom}`;
+          const dots = points.map((value, index) => {
+            const [x, y] = xy(value, index);
+            return `<circle class="chart-dot" cx="${x}" cy="${y}" r="3.5"><title>${Math.round(value)}% rolling WR</title></circle>`;
+          }).join("");
+          const grid = [0, 25, 50, 75, 100].map((value) => {
+            const y = top + (1 - value / 100) * usableH;
+            return `<line class="chart-grid-line" x1="${left}" y1="${y}" x2="${left + usableW}" y2="${y}" /><text class="chart-label" x="4" y="${y + 4}">${value}%</text>`;
+          }).join("");
+          return `
+            <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Team rolling win-rate trend">
+              ${grid}
+              <line class="chart-axis-line" x1="${left}" y1="${height - bottom}" x2="${left + usableW}" y2="${height - bottom}" />
+              <polygon class="chart-fill" points="${area}" />
+              <polyline class="chart-line" points="${polyline}" />
+              ${dots}
+              <text class="chart-label" x="${left}" y="${height - 8}">older</text>
+              <text class="chart-label" x="${left + usableW - 30}" y="${height - 8}">latest</text>
+            </svg>
+          `;
         }
 
-        function patchRankIcons(card) {
-          card.querySelectorAll(".rank-emblem").forEach((node) => {
-            const tier = TIERS.find((item) => node.classList.contains(item));
-            if (!tier) return;
-            const current = node.querySelector("img")?.dataset.tier;
-            if (current === tier) return;
-            node.dataset.tier = tier;
-            node.innerHTML = "";
-            const img = document.createElement("img");
-            img.dataset.tier = tier;
-            img.alt = `${tier} rank emblem`;
-            setRankSource(img, tier);
-            node.appendChild(img);
-          });
-        }
-
-        function patchLaneIcons(card) {
-          card.querySelectorAll(".lane-badge").forEach((node) => {
-            const lane = key(node.getAttribute("title") || node.textContent);
-            const normalized = lane === "support" ? "utility" : lane;
-            const icon = LANE_ICONS[normalized];
-            if (!icon || node.dataset.iconReady === "1") return;
-            node.classList.add("has-icon");
-            node.style.backgroundImage = `url('${icon}')`;
-            node.setAttribute("aria-label", node.getAttribute("title") || normalized);
-            node.dataset.iconReady = "1";
-          });
-        }
-
-        function recentMatches(player) {
-          const data = window.RIFT_LAB_DATA || {};
-          return (data.matches || [])
-            .filter((match) => key(match.player) === key(player.name))
-            .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime())
-            .slice(0, RECENT_LIMIT);
-        }
-
-        function average(matches, field) {
-          return matches.length ? matches.reduce((sum, match) => sum + (Number(match[field]) || 0), 0) / matches.length : 0;
-        }
-
-        function clamp(value) {
-          return Math.max(0.08, Math.min(1, value));
-        }
-
-        function patchRecentRecord(card, matches) {
-          if (!matches.length) return;
-          const wins = matches.filter((match) => match.result === "Win").length;
-          const losses = matches.length - wins;
-          const record = card.querySelector(".league-record");
-          if (!record) return;
-          const percent = `${Math.round((wins / matches.length) * 100)}%`;
-          const text = `W/L (${wins}/${losses})`;
-          if (record.querySelector("strong").textContent !== percent) record.querySelector("strong").textContent = percent;
-          if (record.querySelector("span").textContent !== text) record.querySelector("span").textContent = text;
-          record.title = `Last ${matches.length} ranked games`;
-        }
-
-        function radarSvg(matches) {
-          const wins = matches.filter((match) => match.result === "Win").length;
+        function radarChart(matches) {
+          const recent = matches.slice(0, WINDOW);
+          const s = stat(recent);
           const values = [
-            ["WR", matches.length ? wins / matches.length : 0],
-            ["KDA", clamp(average(matches, "kda") / 5)],
-            ["CS", clamp(average(matches, "csMin") / 8)],
-            ["VIS", clamp(average(matches, "visionMin") / 1.3)],
-            ["DMG", clamp(average(matches, "damageMin") / 1000)],
-            ["GOLD", clamp(average(matches, "goldMin") / 500)]
+            ["WR", Math.min(1, s.wr / 70)],
+            ["KDA", Math.min(1, avg(recent, "kda") / 5)],
+            ["CS", Math.min(1, avg(recent, "csMin") / 8)],
+            ["VIS", Math.min(1, avg(recent, "visionMin") / 1.3)],
+            ["DMG", Math.min(1, avg(recent, "damageMin") / 1000)],
+            ["SAFE", Math.max(0.08, Math.min(1, 1 - avg(recent, "deaths") / 8))]
           ];
-          const cx = 80;
-          const cy = 58;
-          const r = 42;
+          const cx = 210;
+          const cy = 112;
+          const r = 78;
           const point = (ratio, index) => {
             const angle = -Math.PI / 2 + (index * 2 * Math.PI) / values.length;
             return [cx + Math.cos(angle) * r * ratio, cy + Math.sin(angle) * r * ratio];
           };
-          const polygon = values.map(([, value], index) => point(value, index).join(",")).join(" ");
+          const polygon = values.map(([, value], index) => point(Math.max(0.08, value), index).join(",")).join(" ");
           const grid = [0.33, 0.66, 1].map((ratio) => `<polygon class="radar-grid" points="${values.map((_, index) => point(ratio, index).join(",")).join(" ")}" />`).join("");
           const axes = values.map((_, index) => `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${point(1, index)[0]}" y2="${point(1, index)[1]}" />`).join("");
           const labels = values.map(([label], index) => {
-            const [x, y] = point(1.18, index);
-            return `<text class="radar-label" x="${x}" y="${y + 3}">${label}</text>`;
+            const [x, y] = point(1.17, index);
+            return `<text class="radar-label" x="${x - 10}" y="${y + 4}">${label}</text>`;
           }).join("");
-          return `<svg viewBox="0 0 160 116" role="img" aria-label="Last ${matches.length} games form radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
+          return `<svg viewBox="0 0 420 230" role="img" aria-label="Team performance radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
         }
 
-        function patchRadar(card, matches) {
-          if (!matches.length) return;
-          let radar = card.querySelector(".form-radar");
-          if (!radar) {
-            radar = document.createElement("div");
-            radar.className = "form-radar";
-            card.querySelector(".league-record")?.after(radar);
-          }
-          const signature = matches.map((match) => match.matchId || match.gameStart).join("|");
-          if (radar.dataset.signature === signature) return;
-          radar.dataset.signature = signature;
-          radar.innerHTML = `<div class="form-radar-header"><span>Last ${matches.length} form</span><span>Radar</span></div>${radarSvg(matches)}`;
+        function bars(groups, labeler) {
+          if (!groups.length) return '<p>No grouped match data yet.</p>';
+          const maxGames = Math.max(...groups.map(([, rows]) => rows.length), 1);
+          return `<div class="team-bars">${groups.map(([label, rows]) => {
+            const s = stat(rows);
+            const width = Math.max(6, (rows.length / maxGames) * 100);
+            return `
+              <div class="team-bar-row">
+                <strong>${escapeHtml(label)}</strong>
+                <span class="team-bar-track"><span class="team-bar-fill" style="width: ${width}%"></span></span>
+                <span>${escapeHtml(labeler ? labeler(rows, s) : `${rows.length} games`)}</span>
+              </div>
+            `;
+          }).join("")}</div>`;
         }
 
-        function upgradeCards() {
-          const data = window.RIFT_LAB_DATA || {};
-          const players = data.players || [];
-          document.querySelectorAll(".league-player-card").forEach((card) => {
-            const id = card.querySelector(".league-id-row h3")?.textContent.trim();
-            const player = players.find((entry) => riotId(entry) === id || entry.name === id);
-            patchRankIcons(card);
-            patchLaneIcons(card);
-            if (!player) return;
-            const matches = recentMatches(player);
-            patchRecentRecord(card, matches);
-            patchRadar(card, matches);
-          });
+        function table(matches) {
+          const recent = matches.slice(0, 10);
+          if (!recent.length) return '<p>No recent ranked matches imported yet.</p>';
+          return `
+            <table class="team-table">
+              <thead><tr><th>Queue</th><th>Role</th><th>Result</th><th>KDA</th><th>CS/m</th><th>Vis/m</th><th>Dmg/m</th></tr></thead>
+              <tbody>
+                ${recent.map((match) => `
+                  <tr>
+                    <td>${escapeHtml(queueLabel(match.queueId))}</td>
+                    <td>${escapeHtml(roleLabel(match.role))}</td>
+                    <td>${escapeHtml(match.result || "-")}</td>
+                    <td>${escapeHtml(`${num(match.kills)}/${num(match.deaths)}/${num(match.assists)} · ${fmt(match.kda, 2)}`)}</td>
+                    <td>${escapeHtml(fmt(match.csMin, 1))}</td>
+                    <td>${escapeHtml(fmt(match.visionMin, 2))}</td>
+                    <td>${escapeHtml(String(Math.round(num(match.damageMin))))}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
         }
 
-        let queued = false;
-        function queueUpgrade() {
-          if (queued) return;
-          queued = true;
-          requestAnimationFrame(() => {
-            queued = false;
-            upgradeCards();
-          });
+        function renderCharts(matches) {
+          const node = document.querySelector("[data-team-dashboard]");
+          if (!node) return;
+          const recent = matches.slice(0, WINDOW);
+          const queues = groupBy(recent, (match) => queueLabel(match.queueId));
+          const roles = groupBy(recent, (match) => roleLabel(match.role));
+          node.innerHTML = `
+            <article class="team-chart-card">
+              <span class="chart-kicker">Trend</span>
+              <h3>Rolling Team Win Rate</h3>
+              <p>Rolling 5-game win rate across the latest imported ranked games.</p>
+              ${lineChart(matches)}
+            </article>
+            <article class="team-chart-card">
+              <span class="chart-kicker">Profile</span>
+              <h3>Team Performance Radar</h3>
+              <p>Normalized snapshot: win rate, KDA, CS, vision, damage, and death control.</p>
+              ${radarChart(matches)}
+            </article>
+            <article class="team-chart-card">
+              <span class="chart-kicker">Queue balance</span>
+              <h3>Solo/Duo vs Flex</h3>
+              <p>Game volume by queue, with win rate printed on the right.</p>
+              ${bars(queues, (rows, s) => `${pct(s.wr)} · ${rows.length}`)}
+            </article>
+            <article class="team-chart-card">
+              <span class="chart-kicker">Role sample</span>
+              <h3>Role Distribution</h3>
+              <p>Where the current sample is coming from. Useful for spotting bias in the team stats.</p>
+              ${bars(roles, (rows, s) => `${pct(s.wr)} · ${rows.length}`)}
+            </article>
+            <article class="team-chart-card" style="grid-column: 1 / -1;">
+              <span class="chart-kicker">Diagnostics</span>
+              <h3>Latest Match Snapshot</h3>
+              <p>The newest imported games, compressed into team-level review columns.</p>
+              ${table(matches)}
+            </article>
+          `;
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-          new MutationObserver(queueUpgrade).observe(document.body, { childList: true, subtree: true });
-          [0, 250, 1000].forEach((delay) => setTimeout(upgradeCards, delay));
-        });
+        function render() {
+          const data = window.RIFT_LAB_DATA;
+          if (!data) return;
+          const matches = latestMatches(data);
+          const signature = `${matches.length}|${matches[0]?.matchId || ""}|${matches[0]?.gameStart || ""}`;
+          if (signature === lastSignature) return;
+          lastSignature = signature;
+          renderHero(matches);
+          renderMetrics(data, matches);
+          renderCharts(matches);
+        }
+
+        function boot() {
+          [0, 250, 750, 1500].forEach((delay) => setTimeout(render, delay));
+          new MutationObserver(() => requestAnimationFrame(render)).observe(document.body, { childList: true, subtree: true });
+        }
+
+        document.addEventListener("DOMContentLoaded", boot);
       })();
     </script>
   </body>
