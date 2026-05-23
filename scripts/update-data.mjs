@@ -11,9 +11,9 @@ const USE_SAMPLE = process.argv.includes("--sample");
 
 const TRACKED_PLAYERS = [
   { name: "Nguyen", riotName: "Road to the Top", tag: "A1E" },
-  { name: "Hung", riotName: "Vua Bip Gia Lai", tag: "7777" },
+  { name: "Hung", riotName: "Vua Bịp Gia Lai", tag: "7777" },
   { name: "Thien", riotName: "Tian laoshi", tag: "2252" },
-  { name: "Huy", riotName: "Hoc Van Truong", tag: "1207" }
+  { name: "Huy", riotName: "Hốc Văn Trưởng", tag: "1207" }
 ];
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");

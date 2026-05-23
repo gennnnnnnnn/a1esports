@@ -631,9 +631,7 @@
     if (!filter) return;
 
     const selected = filter.value || MATCH_FILTERS.player;
-    const players = data.players.length
-      ? data.players.map((player) => player.name)
-      : [...new Set(data.matches.map((match) => match.player).filter(Boolean))];
+    const players = uniquePlayerNames(data);
 
     filter.innerHTML = [
       '<option value="all">All players</option>',
@@ -642,6 +640,20 @@
 
     filter.value = players.some((player) => normalizeKey(player) === selected) ? selected : "all";
     MATCH_FILTERS.player = filter.value;
+  }
+
+  function uniquePlayerNames(data) {
+    const names = new Map();
+    (data.players || []).forEach((player) => {
+      if (player.name) names.set(normalizeKey(player.name), player.name);
+    });
+    (data.matches || []).forEach((match) => {
+      if (match.player) names.set(normalizeKey(match.player), match.player);
+    });
+    (data.summaryRows || []).forEach((row) => {
+      if (row.player) names.set(normalizeKey(row.player), row.player);
+    });
+    return [...names.values()].sort((a, b) => a.localeCompare(b));
   }
 
   function metricCards(metrics) {
