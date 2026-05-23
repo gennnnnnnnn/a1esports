@@ -680,6 +680,7 @@
     const showFlex = queueMode !== "solo";
     const summary = playerSummary(player.name);
     const insights = playerInsights(player.name);
+    const lastSeen = playerLastSeen(player.name);
 
     return `
       <article class="player-card league-player-card">
@@ -697,7 +698,7 @@
             </div>
             <div class="sync-stamp">
               <span class="sync-icon"></span>
-              <span>now</span>
+              <time datetime="${escapeHtml(lastSeen.iso)}" title="${escapeHtml(lastSeen.title)}">${escapeHtml(lastSeen.label)}</time>
             </div>
           </div>
 
@@ -721,6 +722,29 @@
         </div>
       </article>
     `;
+  }
+
+  function playerLastSeen(playerName) {
+    const data = window.RIFT_LAB_DATA || {};
+    const latestMatchTime = (data.matches || [])
+      .filter((match) => normalizeKey(match.player) === normalizeKey(playerName))
+      .map((match) => new Date(match.gameStart))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+
+    if (latestMatchTime) {
+      return {
+        iso: latestMatchTime.toISOString(),
+        label: formatGmt7DateTime(latestMatchTime),
+        title: "Last ranked match time in GMT+7"
+      };
+    }
+
+    return {
+      iso: "",
+      label: "No match",
+      title: "No ranked match time available"
+    };
   }
 
   function leagueRankPanel(label, player, mode) {
@@ -1086,6 +1110,21 @@
       hour: "2-digit",
       minute: "2-digit"
     }).format(date);
+  }
+
+  function formatGmt7DateTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "No match";
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Bangkok",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    }).formatToParts(date);
+    const get = (type) => parts.find((part) => part.type === type)?.value || "";
+    return `${get("month")} ${get("day")} ${get("hour")}:${get("minute")} GMT+7`;
   }
 
   function escapeHtml(value) {

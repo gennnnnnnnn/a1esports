@@ -489,7 +489,15 @@ h3 {
   padding-left: 11px;
   border-left: 1px solid rgba(255, 255, 255, 0.25);
   color: #8f96a3;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
+  justify-content: flex-end;
+  max-width: 132px;
+  text-align: right;
+  white-space: normal;
+}
+
+.sync-stamp time {
+  line-height: 1.15;
 }
 
 .sync-icon {
