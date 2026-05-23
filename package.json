@@ -1,0 +1,14 @@
+{
+  "name": "a1esports-rift-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "update:data": "node scripts/update-data.mjs",
+    "update:data:sample": "node scripts/update-data.mjs --sample",
+    "check": "node --check scripts/update-data.mjs && node --check js/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

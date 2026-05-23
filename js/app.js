@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "riftLabApiUrl";
+  const STORAGE_KEY = "riftLabDataUrl";
   const PLAYER_QUEUE = { value: "all" };
   const MATCH_FILTERS = { queue: "all", champion: "" };
   const NOTE_FILTERS = { search: "" };
@@ -312,11 +312,11 @@
         return {
           data: SAMPLE_DATA,
           mode: "sample",
-          errorMessage: "Apps Script JSON endpoint is not configured."
+          errorMessage: "Static data file is not configured."
         };
       }
 
-      throw new Error("Apps Script JSON endpoint is not configured.");
+      throw new Error("Static data file is not configured.");
     }
 
     try {
@@ -326,7 +326,7 @@
       });
 
       if (!response.ok) {
-        throw new Error(`Apps Script returned ${response.status}.`);
+        throw new Error(`Data endpoint returned ${response.status}.`);
       }
 
       return { data: await response.json(), mode: "live" };
@@ -335,7 +335,7 @@
         return {
           data: SAMPLE_DATA,
           mode: "error-sample",
-          errorMessage: error && error.message ? error.message : "Could not load Apps Script JSON."
+          errorMessage: error && error.message ? error.message : "Could not load static dashboard JSON."
         };
       }
 
@@ -358,7 +358,7 @@
       storageSet(STORAGE_KEY, queryApi);
     }
 
-    return [queryApi, storedApi, configApi, metaApi].find((candidate) => {
+    return [queryApi, configApi, metaApi, storedApi].find((candidate) => {
       return candidate && !/PASTE_|YOUR_DEPLOYMENT_ID|YOUR_APPS_SCRIPT/i.test(candidate);
     }) || "";
   }
@@ -493,8 +493,8 @@
     if (!nodes.length) return;
 
     const status = {
-      live: ["Live data", "Connected to Apps Script JSON."],
-      sample: ["Sample data", "Set the Apps Script JSON endpoint to go live."],
+      live: ["Live data", "Connected to GitHub-generated JSON."],
+      sample: ["Sample data", "Run the GitHub Actions data refresh to go live."],
       "error-sample": ["Sample data", errorMessage || "Live data could not be loaded."],
       error: ["Data load failed", errorMessage || "Could not load dashboard data."]
     }[mode] || ["Dashboard data", ""];
@@ -535,7 +535,7 @@
     if (notesNode) {
       notesNode.innerHTML = data.latestNotes.length
         ? data.latestNotes.slice(0, 3).map(noteCard).join("")
-        : emptyState("No coach notes yet", "Generated notes will appear after the next Apps Script refresh.");
+        : emptyState("No coach notes yet", "Generated notes will appear after the next GitHub Actions refresh.");
     }
   }
 
@@ -619,7 +619,7 @@
   function metricCards(metrics) {
     const cards = [
       ["Tracked Players", metrics.trackedPlayers, "Active roster"],
-      ["Imported Matches", metrics.importedMatches, "Sheet rows"],
+      ["Imported Matches", metrics.importedMatches, "Ranked rows"],
       ["Best Recent", metrics.bestRecent, "Last imported set"],
       ["Highest Solo", metrics.highestSolo, "Solo/Duo"],
       ["Highest Flex", metrics.highestFlex, "Ranked Flex"],
