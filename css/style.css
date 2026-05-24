@@ -318,35 +318,6 @@ h3 {
   font-size: 1.2rem;
 }
 
-.status-slot {
-  min-height: 0;
-}
-
-.data-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 18px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: rgba(18, 22, 32, 0.76);
-  color: var(--muted);
-}
-
-.data-status strong {
-  color: var(--text);
-}
-
-.data-status.error {
-  border-color: rgba(255, 95, 115, 0.52);
-}
-
-.data-status.sample {
-  border-color: rgba(242, 193, 91, 0.44);
-}
-
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

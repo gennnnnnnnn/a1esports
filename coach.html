@@ -6,10 +6,65 @@
     <meta name="rift-lab-api" content="">
     <title>Coach | Rift Lab</title>
     <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
-    <link rel="stylesheet" href="css/style.css?v=20260523-17">
+    <link rel="stylesheet" href="css/style.css?v=20260524-1">
     <style>
       .notes-grid.coach-deep-list {
         grid-template-columns: 1fr;
+      }
+
+      .coach-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .coach-overview-card {
+        min-height: 116px;
+        padding: 15px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          linear-gradient(140deg, rgba(39, 211, 238, 0.08), transparent 46%),
+          rgba(18, 22, 32, 0.86);
+      }
+
+      .coach-overview-card span,
+      .coach-panel-heading span,
+      .coach-priority-chip {
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .coach-overview-card strong {
+        display: block;
+        margin-top: 9px;
+        color: var(--text);
+        font-size: 1.6rem;
+        line-height: 1;
+        overflow-wrap: anywhere;
+      }
+
+      .coach-overview-card small {
+        display: block;
+        margin-top: 9px;
+        color: #a9d8ff;
+        line-height: 1.35;
+      }
+
+      .coach-panel-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 8px;
+      }
+
+      .coach-panel-heading h2 {
+        margin-top: 4px;
+        font-size: 1.2rem;
       }
 
       .coach-deep-card {
@@ -17,7 +72,9 @@
         padding: 18px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius);
-        background: rgba(18, 22, 32, 0.86);
+        background:
+          linear-gradient(125deg, rgba(39, 211, 238, 0.06), transparent 36%),
+          rgba(18, 22, 32, 0.86);
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
       }
 
@@ -37,6 +94,36 @@
         margin: 6px 0 0;
         color: var(--muted);
         line-height: 1.45;
+      }
+
+      .coach-head-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .coach-priority-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 0 10px;
+        border: 1px solid rgba(242, 193, 91, 0.45);
+        border-radius: 6px;
+        background: rgba(242, 193, 91, 0.1);
+        color: #f5d28a;
+      }
+
+      .coach-priority-chip.good {
+        border-color: rgba(88, 219, 155, 0.45);
+        background: rgba(88, 219, 155, 0.09);
+        color: #8df0bc;
+      }
+
+      .coach-priority-chip.urgent {
+        border-color: rgba(255, 95, 115, 0.48);
+        background: rgba(255, 95, 115, 0.1);
+        color: #ffb4bf;
       }
 
       .coach-rank-stack {
@@ -212,6 +299,10 @@
       }
 
       @media (max-width: 1080px) {
+        .coach-overview-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .coach-metric-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
         }
@@ -222,6 +313,10 @@
       }
 
       @media (max-width: 700px) {
+        .coach-overview-grid {
+          grid-template-columns: 1fr;
+        }
+
         .coach-deep-head {
           grid-template-columns: 1fr;
         }
@@ -269,13 +364,21 @@
         <h1>Coach Board</h1>
       </section>
 
-      <section class="status-slot" data-status></section>
-
       <section class="toolbar" aria-label="Coach filters">
         <label class="search-field">
           <span>Search</span>
           <input type="search" data-note-search placeholder="Player, weakness, action">
         </label>
+      </section>
+
+      <section class="coach-overview-grid" data-coach-overview aria-label="Season coach summary"></section>
+
+      <section class="coach-panel-heading">
+        <div>
+          <span>Player plans</span>
+          <h2>Season review priorities</h2>
+        </div>
+        <span data-coach-count>Waiting for data</span>
       </section>
 
       <section class="notes-grid" data-notes-list aria-label="Coach notes"></section>
@@ -286,8 +389,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260523-17"></script>
-    <script src="js/app.js?v=20260523-17"></script>
+    <script src="js/config.example.js?v=20260524-1"></script>
+    <script src="js/app.js?v=20260524-1"></script>
     <script>
       (() => {
         const LIMIT = 20;
@@ -378,10 +481,111 @@
           return "Other";
         }
 
+        function totalStat(match, totalField, perMinuteField) {
+          const total = num(match[totalField]);
+          if (total) return total;
+          return Math.round(num(match[perMinuteField]) * num(match.durationMin));
+        }
+
         function resultStats(matches) {
           const wins = matches.filter((match) => match.result === "Win").length;
           const losses = matches.length - wins;
           return { wins, losses, winRate: matches.length ? (wins / matches.length) * 100 : 0 };
+        }
+
+        function activeMatches() {
+          const data = window.RIFT_LAB_DATA || {};
+          const matches = window.RIFT_LAB_GET_ACTIVE_MATCHES ? window.RIFT_LAB_GET_ACTIVE_MATCHES() : (data.matches || []);
+          return [...matches].sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
+        }
+
+        function priorityInfo(insight, matches) {
+          if (!matches.length) {
+            return { score: 0, label: "Needs data", tone: "urgent", focus: "Import ranked matches" };
+          }
+
+          let score = 0;
+          if (insight.stats.winRate < 40) score += 2;
+          else if (insight.stats.winRate < 50) score += 1;
+          if (insight.avgDeaths >= 6.5) score += 2;
+          else if (insight.avgDeaths >= 5.5) score += 1;
+          if (insight.avgVision < 0.65) score += 1;
+          if (insight.avgCs < 5.8) score += 1;
+          if (insight.avgKda < 2) score += 1;
+
+          if (score >= 4) return { score, label: "Urgent review", tone: "urgent", focus: "Deaths and conversion" };
+          if (score >= 2) return { score, label: "Focus review", tone: "mixed", focus: "One repeat leak" };
+          return { score, label: "Stable form", tone: "good", focus: "Macro polish" };
+        }
+
+        function playerModel(player) {
+          const matches = playerMatches(player);
+          const insight = buildInsights(matches);
+          return {
+            player,
+            matches,
+            note: playerNote(player),
+            insight,
+            priority: priorityInfo(insight, matches),
+            roles: countBy(matches, "role", roleLabel),
+            queues: countBy(matches, "queueId", queueLabel)
+          };
+        }
+
+        function topChampionText(matches) {
+          const top = countBy(matches, "champion")[0];
+          return top ? `${top[0]} (${top[1]})` : "No champion sample";
+        }
+
+        function mainIssueText(models) {
+          const withData = models.filter((model) => model.matches.length);
+          if (!withData.length) return "Waiting for ranked match rows";
+
+          const highestDeaths = [...withData].sort((a, b) => b.insight.avgDeaths - a.insight.avgDeaths)[0];
+          const lowestVision = [...withData].sort((a, b) => a.insight.avgVision - b.insight.avgVision)[0];
+          const lowestWinRate = [...withData].sort((a, b) => a.insight.stats.winRate - b.insight.stats.winRate)[0];
+
+          if (highestDeaths?.insight.avgDeaths >= 6) return `${riotId(highestDeaths.player)}: ${fmt(highestDeaths.insight.avgDeaths, 1)} deaths/game`;
+          if (lowestVision?.insight.avgVision < 0.75) return `${riotId(lowestVision.player)}: ${fmt(lowestVision.insight.avgVision, 2)} vision/min`;
+          return `${riotId(lowestWinRate.player)}: ${percent(lowestWinRate.insight.stats.winRate)} win rate`;
+        }
+
+        function renderCoachOverview(models) {
+          const node = document.querySelector("[data-coach-overview]");
+          if (!node) return;
+
+          const matches = activeMatches();
+          const stats = resultStats(matches);
+          const season = window.RIFT_LAB_SELECTED_SEASON_DETAIL;
+          const seasonText = season ? `${season.label} (${season.range})` : "Selected season";
+          const priorityModel = models
+            .filter((model) => model.matches.length)
+            .sort((a, b) => b.priority.score - a.priority.score || a.insight.stats.winRate - b.insight.stats.winRate)[0];
+          const priorityText = priorityModel ? riotId(priorityModel.player) : "No player sample";
+          const queue = countBy(matches, "queueId", queueLabel)[0];
+
+          node.innerHTML = `
+            <article class="coach-overview-card">
+              <span>${escapeHtml(seasonText)}</span>
+              <strong>${matches.length}</strong>
+              <small>${stats.wins}W-${stats.losses}L - ${percent(stats.winRate)} win rate</small>
+            </article>
+            <article class="coach-overview-card">
+              <span>Review first</span>
+              <strong>${escapeHtml(priorityText)}</strong>
+              <small>${priorityModel ? escapeHtml(priorityModel.priority.focus) : "Import more games for priorities"}</small>
+            </article>
+            <article class="coach-overview-card">
+              <span>Most played pick</span>
+              <strong>${escapeHtml(topChampionText(matches))}</strong>
+              <small>${escapeHtml(queue ? `${queue[0]} leads the sample` : "No queue sample yet")}</small>
+            </article>
+            <article class="coach-overview-card">
+              <span>Main review alarm</span>
+              <strong>${escapeHtml(mainIssueText(models))}</strong>
+              <small>Use this as the first replay question.</small>
+            </article>
+          `;
         }
 
         function trendText(matches) {
@@ -430,7 +634,7 @@
           else weaknesses.push(`Result pressure: ${stats.wins}W-${stats.losses}L. The sample says the player is not converting enough games.`);
 
           if (metricGrade(avgKda, 3.2, 2.0) === "good") strengths.push(`Good fight conversion with ${fmt(avgKda, 2)} average KDA.`);
-          else if (metricGrade(avgKda, 3.2, 2.0) === "weak") weaknesses.push(`Low KDA at ${fmt(avgKda, 2)}. Either fights are bad, deaths are high, or both. Probably both — the game is rude like that.`);
+          else if (metricGrade(avgKda, 3.2, 2.0) === "weak") weaknesses.push(`Low KDA at ${fmt(avgKda, 2)}. Either fights are bad, deaths are high, or both.`);
 
           if (metricGrade(avgDeaths, 4.5, 6.0, false) === "good") strengths.push(`Death control is healthy at ${fmt(avgDeaths, 1)} deaths/game.`);
           else if (metricGrade(avgDeaths, 4.5, 6.0, false) === "weak") weaknesses.push(`Deaths are too high at ${fmt(avgDeaths, 1)} per game. This is the clearest review target.`);
@@ -446,7 +650,7 @@
 
           actions.push("Review the first three deaths of every loss. Classify each as lane mistake, jungle tracking mistake, bad objective setup, or greed recall.");
           actions.push("Set a 14-minute checkpoint: CS/min, deaths, plate/gold state, and whether the first two neutral objectives were contested correctly.");
-          actions.push(avgVision < 0.8 ? "Before dragon and Baron, buy/control vision 60–75 seconds early. Walking in at spawn time is Bronze GPS behavior." : "Keep vision timings, but check whether wards are placed before objectives rather than after the fight has already started.");
+          actions.push(avgVision < 0.8 ? "Before dragon and Baron, buy/control vision 60-75 seconds early. Walking in at spawn time gives the enemy the first move." : "Keep vision timings, but check whether wards are placed before objectives rather than after the fight has already started.");
           actions.push(avgDeaths > 5.5 ? "For the next block, cap avoidable deaths: no fighting without wave state, item parity, or objective reason." : "Maintain low-death discipline, then push more tempo through earlier roams and faster resets.");
           actions.push(avgCs < 6.5 ? "Assign side-wave collection after 14 minutes. Someone has to eat the free gold; make it this player." : "CS base is acceptable; focus reviews on conversion: Herald/dragon/baron sequencing after lane wins.");
 
@@ -490,14 +694,14 @@
           return [...grouped.entries()]
             .sort((a, b) => b[1].games - a[1].games || b[1].wins - a[1].wins)
             .slice(0, 6)
-            .map(([champion, item]) => `<span class="coach-chip">${escapeHtml(champion)} <strong>${item.wins}W-${item.games - item.wins}L · ${fmt(item.kda / item.games, 1)} KDA</strong></span>`)
+            .map(([champion, item]) => `<span class="coach-chip">${escapeHtml(champion)} <strong>${item.wins}W-${item.games - item.wins}L - ${fmt(item.kda / item.games, 1)} KDA</strong></span>`)
             .join("") || '<span class="coach-chip">No champion sample</span>';
         }
 
         function matchIssue(match) {
           const issues = [];
           if (num(match.deaths) >= 7) issues.push("death count");
-          if (num(match.csMin) < 5.8 && !/[support|utility]/i.test(match.role || "")) issues.push("CS leak");
+          if (num(match.csMin) < 5.8 && !/(support|utility)/i.test(match.role || "")) issues.push("CS leak");
           if (num(match.visionMin) < 0.65) issues.push("vision low");
           if (num(match.damageMin) < 600) issues.push("low damage");
           if (!issues.length && match.result === "Win") return "clean conversion";
@@ -511,14 +715,14 @@
             const resultClass = match.result === "Win" ? "win" : "loss";
             return `
               <tr>
-                <td>${escapeHtml(formatDate(match.gameStart))}</td>
+                <td>${escapeHtml(formatDateTime(match.gameStart))}</td>
                 <td>${escapeHtml(queueLabel(match.queueId))}</td>
-                <td>${escapeHtml(match.champion)} · ${escapeHtml(roleLabel(match.role))}</td>
+                <td>${escapeHtml(match.champion)} - ${escapeHtml(roleLabel(match.role))}</td>
                 <td class="${resultClass}">${escapeHtml(match.result)}</td>
-                <td>${escapeHtml(`${num(match.kills)}/${num(match.deaths)}/${num(match.assists)}`)} · ${fmt(match.kda, 2)}</td>
-                <td>${fmt(match.csMin, 1)}</td>
-                <td>${fmt(match.visionMin, 2)}</td>
-                <td>${Math.round(num(match.damageMin))}</td>
+                <td>${escapeHtml(`${num(match.kills)}/${num(match.deaths)}/${num(match.assists)}`)} - ${fmt(match.kda, 2)}</td>
+                <td>${totalStat(match, "cs", "csMin")}</td>
+                <td>${totalStat(match, "visionScore", "visionMin")}</td>
+                <td>${totalStat(match, "damage", "damageMin")}</td>
                 <td>${escapeHtml(matchIssue(match))}</td>
               </tr>
             `;
@@ -532,9 +736,9 @@
                   <th>Pick / Role</th>
                   <th>Result</th>
                   <th>KDA</th>
-                  <th>CS/m</th>
-                  <th>Vis/m</th>
-                  <th>Dmg/m</th>
+                  <th>CS</th>
+                  <th>Vision</th>
+                  <th>Damage</th>
                   <th>Review tag</th>
                 </tr>
               </thead>
@@ -549,12 +753,21 @@
           return new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(date);
         }
 
-        function card(player) {
-          const note = playerNote(player);
-          const matches = playerMatches(player);
-          const insight = buildInsights(matches);
-          const roles = countBy(matches, "role", roleLabel);
-          const queues = countBy(matches, "queueId", queueLabel);
+        function formatDateTime(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "Recent";
+          return `${new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+            timeZone: "Asia/Bangkok"
+          }).format(date).replace(",", "")} GMT+7`;
+        }
+
+        function card(model) {
+          const { player, matches, note, insight, priority, roles, queues } = model;
           const lastPlayed = matches[0] ? formatDate(matches[0].gameStart) : "No match imported";
 
           if (!matches.length) {
@@ -570,7 +783,7 @@
                     <span class="coach-rank-chip">Flex <strong>${escapeHtml(rankText(player, "flex"))}</strong></span>
                   </div>
                 </div>
-                <div class="coach-block warning"><span>Required data</span><p>Run the GitHub Actions refresh after this player has ranked Solo/Duo or Flex games. No coaching model survives without data. Even Faker needs a replay.</p></div>
+                <div class="coach-block warning"><span>Required data</span><p>Run the GitHub Actions refresh after this player has ranked Solo/Duo or Flex games. The detailed coach model needs at least one imported ranked game.</p></div>
               </article>
             `;
           }
@@ -580,7 +793,12 @@
               <div class="coach-deep-head">
                 <div>
                   <h3>${escapeHtml(riotId(player))}</h3>
-                  <p>${escapeHtml(note.scope || `Last ${matches.length} ranked games`)} · last imported match: ${escapeHtml(lastPlayed)}. This analysis uses Riot match rows currently available in the dashboard, capped at the latest ${LIMIT} games.</p>
+                  <p>${escapeHtml(note.scope || `Last ${matches.length} ranked games`)} - last imported match: ${escapeHtml(lastPlayed)}. This analysis uses Riot match rows currently available in the dashboard, capped at the latest ${LIMIT} games.</p>
+                  <div class="coach-head-meta">
+                    <span class="coach-priority-chip ${escapeHtml(priority.tone)}">${escapeHtml(priority.label)}</span>
+                    <span class="coach-chip">${matches.length} game sample</span>
+                    <span class="coach-chip">${escapeHtml(priority.focus)}</span>
+                  </div>
                 </div>
                 <div class="coach-rank-stack">
                   <span class="coach-rank-chip">Solo <strong>${escapeHtml(rankText(player, "solo"))}</strong></span>
@@ -679,21 +897,28 @@
 
           const data = window.RIFT_LAB_DATA;
           const term = key(document.querySelector("[data-note-search]")?.value || "");
-          const players = (data.players || []).filter((player) => {
+          const models = (data.players || []).map(playerModel);
+          renderCoachOverview(models);
+
+          const filtered = models.filter((model) => {
             if (!term) return true;
-            const matches = playerMatches(player);
-            const payload = JSON.stringify({ player, note: playerNote(player), matches }).toLowerCase();
+            const payload = JSON.stringify(model).toLowerCase();
             return key(payload).includes(term);
           });
+          const countNode = document.querySelector("[data-coach-count]");
+          if (countNode) {
+            const games = filtered.reduce((sum, model) => sum + model.matches.length, 0);
+            countNode.textContent = `${filtered.length} players - ${games} reviewed games`;
+          }
 
-          const signature = `${window.RIFT_LAB_SELECTED_SEASON || ""}|${term}|${players.map((player) => player.name).join("|")}|${(data.matches || []).length}`;
+          const signature = `${window.RIFT_LAB_SELECTED_SEASON || ""}|${term}|${filtered.map((model) => model.player.name).join("|")}|${activeMatches().length}|${(data.matches || []).length}`;
           if (signature === lastSignature && node.classList.contains("coach-deep-list")) return;
           lastSignature = signature;
 
           rendering = true;
           node.classList.add("coach-deep-list");
-          node.innerHTML = players.length
-            ? players.map(card).join("")
+          node.innerHTML = filtered.length
+            ? filtered.map(card).join("")
             : '<div class="empty-state"><strong>No matching player</strong><span>Try another name, champion, role, weakness, or action keyword.</span></div>';
           rendering = false;
         }

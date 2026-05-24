@@ -283,23 +283,17 @@
     renderLoading();
 
     let payload;
-    let mode = "live";
-    let errorMessage = "";
 
     try {
       const response = await loadData();
       payload = normalizeData(response.data);
-      mode = response.mode;
-      errorMessage = response.errorMessage || "";
     } catch (error) {
       payload = normalizeData(SAMPLE_DATA);
-      mode = "error";
-      errorMessage = error && error.message ? error.message : "Could not load dashboard data.";
+      console.warn("Rift Lab data load failed; using sample data.", error);
     }
 
     window.RIFT_LAB_DATA = payload;
     window.RIFT_LAB_GET_ACTIVE_MATCHES = () => activeSeasonMatches(window.RIFT_LAB_DATA || payload);
-    renderStatus(mode, errorMessage);
     setupSeasonControls(payload);
     renderShared(payload);
     renderCurrentPage(payload);
@@ -654,27 +648,6 @@
     const flexNode = document.querySelector('[data-field="highest-flex"]');
     if (soloNode) soloNode.textContent = metricText(data.metrics.highestSolo);
     if (flexNode) flexNode.textContent = metricText(data.metrics.highestFlex);
-  }
-
-  function renderStatus(mode, errorMessage) {
-    const nodes = document.querySelectorAll("[data-status]");
-    if (!nodes.length) return;
-
-    const status = {
-      live: ["Live data", "Connected to GitHub-generated JSON."],
-      sample: ["Sample data", "Run the GitHub Actions data refresh to go live."],
-      "error-sample": ["Sample data", errorMessage || "Live data could not be loaded."],
-      error: ["Data load failed", errorMessage || "Could not load dashboard data."]
-    }[mode] || ["Dashboard data", ""];
-
-    nodes.forEach((node) => {
-      node.innerHTML = `
-        <div class="data-status ${mode.includes("error") ? "error" : ""} ${mode.includes("sample") ? "sample" : ""}">
-          <strong>${escapeHtml(status[0])}</strong>
-          <span>${escapeHtml(status[1])}</span>
-        </div>
-      `;
-    });
   }
 
   function renderCurrentPage(data) {
