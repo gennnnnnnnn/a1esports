@@ -705,7 +705,6 @@
           });
           return [...grouped.entries()]
             .sort((a, b) => b[1].games - a[1].games || b[1].wins - a[1].wins)
-            .slice(0, 6)
             .map(([champion, item]) => {
               const title = `${champion}: ${item.wins}W-${item.games - item.wins}L - ${fmt(item.kda / item.games, 1)} KDA`;
               return `
