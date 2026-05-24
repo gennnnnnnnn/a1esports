@@ -12,23 +12,6 @@
         grid-template-columns: 1fr;
       }
 
-      .coach-overview-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .coach-overview-card {
-        min-height: 116px;
-        padding: 15px;
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        background:
-          linear-gradient(140deg, rgba(39, 211, 238, 0.08), transparent 46%),
-          rgba(18, 22, 32, 0.86);
-      }
-
-      .coach-overview-card span,
       .coach-panel-heading span,
       .coach-priority-chip {
         color: var(--muted);
@@ -36,22 +19,6 @@
         font-weight: 900;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-      }
-
-      .coach-overview-card strong {
-        display: block;
-        margin-top: 9px;
-        color: var(--text);
-        font-size: 1.6rem;
-        line-height: 1;
-        overflow-wrap: anywhere;
-      }
-
-      .coach-overview-card small {
-        display: block;
-        margin-top: 9px;
-        color: #a9d8ff;
-        line-height: 1.35;
       }
 
       .coach-panel-heading {
@@ -265,6 +232,54 @@
         gap: 7px;
       }
 
+      .coach-icon-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 34px;
+        padding: 4px 8px;
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.035);
+        color: var(--text);
+        font-size: 0.76rem;
+        font-weight: 900;
+      }
+
+      .coach-icon-chip img {
+        width: 24px;
+        height: 24px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+
+      .coach-icon-chip.role img {
+        padding: 2px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.055);
+      }
+
+      .coach-icon-pair {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .coach-table-icon {
+        width: 26px;
+        height: 26px;
+        border: 1px solid var(--line-strong);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.045);
+        object-fit: cover;
+        vertical-align: middle;
+      }
+
+      .coach-table-icon.role {
+        padding: 3px;
+        object-fit: contain;
+      }
+
       .coach-match-table {
         width: 100%;
         border-collapse: collapse;
@@ -299,10 +314,6 @@
       }
 
       @media (max-width: 1080px) {
-        .coach-overview-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
         .coach-metric-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
         }
@@ -313,10 +324,6 @@
       }
 
       @media (max-width: 700px) {
-        .coach-overview-grid {
-          grid-template-columns: 1fr;
-        }
-
         .coach-deep-head {
           grid-template-columns: 1fr;
         }
@@ -371,8 +378,6 @@
         </label>
       </section>
 
-      <section class="coach-overview-grid" data-coach-overview aria-label="Season coach summary"></section>
-
       <section class="coach-panel-heading">
         <div>
           <span>Player plans</span>
@@ -395,6 +400,36 @@
       (() => {
         const LIMIT = 20;
         const MAX_DIAGNOSTIC_ROWS = 8;
+        const DATA_DRAGON_VERSION = "14.24.1";
+        const CHAMPION_KEYS = {
+          "Aurelion Sol": "AurelionSol",
+          "Bel'Veth": "Belveth",
+          "Cho'Gath": "Chogath",
+          "Dr. Mundo": "DrMundo",
+          "Jarvan IV": "JarvanIV",
+          "Kai'Sa": "Kaisa",
+          "Kha'Zix": "Khazix",
+          "Kog'Maw": "KogMaw",
+          "K'Sante": "KSante",
+          "Lee Sin": "LeeSin",
+          "Master Yi": "MasterYi",
+          "Miss Fortune": "MissFortune",
+          "Nunu & Willump": "Nunu",
+          "Rek'Sai": "RekSai",
+          "Renata Glasc": "Renata",
+          "Tahm Kench": "TahmKench",
+          "Twisted Fate": "TwistedFate",
+          "Vel'Koz": "Velkoz",
+          "Xin Zhao": "XinZhao",
+          Wukong: "MonkeyKing"
+        };
+        const LANE_ICONS = {
+          top: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-top.png",
+          jungle: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-jungle.png",
+          middle: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-middle.png",
+          bottom: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-bottom.png",
+          utility: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-utility.png"
+        };
         let rendering = false;
         let lastSignature = "";
 
@@ -475,6 +510,29 @@
           return String(role || "Unknown");
         }
 
+        function roleKey(role) {
+          const normalized = key(role);
+          if (normalized === "top") return "top";
+          if (normalized === "jungle" || normalized === "jg") return "jungle";
+          if (normalized === "middle" || normalized === "mid") return "middle";
+          if (normalized === "bottom" || normalized === "bot" || normalized === "adc") return "bottom";
+          if (normalized === "utility" || normalized === "support" || normalized === "sup") return "utility";
+          return "";
+        }
+
+        function roleIcon(role) {
+          return LANE_ICONS[roleKey(role)] || LANE_ICONS.utility;
+        }
+
+        function championIcon(champion) {
+          const champKey = CHAMPION_KEYS[champion] || String(champion || "")
+            .replace(/['.]/g, "")
+            .replace(/&/g, "")
+            .replace(/\s+/g, "");
+          const safeKey = champKey && champKey !== "Unknown" ? champKey : "Yone";
+          return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/champion/${encodeURIComponent(safeKey)}.png`;
+        }
+
         function queueLabel(queueId) {
           if (Number(queueId) === 420) return "Solo/Duo";
           if (Number(queueId) === 440) return "Flex";
@@ -530,62 +588,6 @@
             roles: countBy(matches, "role", roleLabel),
             queues: countBy(matches, "queueId", queueLabel)
           };
-        }
-
-        function topChampionText(matches) {
-          const top = countBy(matches, "champion")[0];
-          return top ? `${top[0]} (${top[1]})` : "No champion sample";
-        }
-
-        function mainIssueText(models) {
-          const withData = models.filter((model) => model.matches.length);
-          if (!withData.length) return "Waiting for ranked match rows";
-
-          const highestDeaths = [...withData].sort((a, b) => b.insight.avgDeaths - a.insight.avgDeaths)[0];
-          const lowestVision = [...withData].sort((a, b) => a.insight.avgVision - b.insight.avgVision)[0];
-          const lowestWinRate = [...withData].sort((a, b) => a.insight.stats.winRate - b.insight.stats.winRate)[0];
-
-          if (highestDeaths?.insight.avgDeaths >= 6) return `${riotId(highestDeaths.player)}: ${fmt(highestDeaths.insight.avgDeaths, 1)} deaths/game`;
-          if (lowestVision?.insight.avgVision < 0.75) return `${riotId(lowestVision.player)}: ${fmt(lowestVision.insight.avgVision, 2)} vision/min`;
-          return `${riotId(lowestWinRate.player)}: ${percent(lowestWinRate.insight.stats.winRate)} win rate`;
-        }
-
-        function renderCoachOverview(models) {
-          const node = document.querySelector("[data-coach-overview]");
-          if (!node) return;
-
-          const matches = activeMatches();
-          const stats = resultStats(matches);
-          const season = window.RIFT_LAB_SELECTED_SEASON_DETAIL;
-          const seasonText = season ? `${season.label} (${season.range})` : "Selected season";
-          const priorityModel = models
-            .filter((model) => model.matches.length)
-            .sort((a, b) => b.priority.score - a.priority.score || a.insight.stats.winRate - b.insight.stats.winRate)[0];
-          const priorityText = priorityModel ? riotId(priorityModel.player) : "No player sample";
-          const queue = countBy(matches, "queueId", queueLabel)[0];
-
-          node.innerHTML = `
-            <article class="coach-overview-card">
-              <span>${escapeHtml(seasonText)}</span>
-              <strong>${matches.length}</strong>
-              <small>${stats.wins}W-${stats.losses}L - ${percent(stats.winRate)} win rate</small>
-            </article>
-            <article class="coach-overview-card">
-              <span>Review first</span>
-              <strong>${escapeHtml(priorityText)}</strong>
-              <small>${priorityModel ? escapeHtml(priorityModel.priority.focus) : "Import more games for priorities"}</small>
-            </article>
-            <article class="coach-overview-card">
-              <span>Most played pick</span>
-              <strong>${escapeHtml(topChampionText(matches))}</strong>
-              <small>${escapeHtml(queue ? `${queue[0]} leads the sample` : "No queue sample yet")}</small>
-            </article>
-            <article class="coach-overview-card">
-              <span>Main review alarm</span>
-              <strong>${escapeHtml(mainIssueText(models))}</strong>
-              <small>Use this as the first replay question.</small>
-            </article>
-          `;
         }
 
         function trendText(matches) {
@@ -680,6 +682,16 @@
           return entries.map(([label, count]) => `<span class="coach-chip">${escapeHtml(label)} <strong>${count}/${total}</strong></span>`).join("");
         }
 
+        function roleRows(entries, total) {
+          if (!entries.length) return '<span class="coach-chip">No role data</span>';
+          return entries.map(([label, count]) => `
+            <span class="coach-icon-chip role" title="${escapeHtml(`${label}: ${count}/${total}`)}" aria-label="${escapeHtml(`${label}: ${count}/${total}`)}">
+              <img src="${escapeHtml(roleIcon(label))}" alt="${escapeHtml(label)}">
+              <strong>${count}/${total}</strong>
+            </span>
+          `).join("");
+        }
+
         function championRows(matches) {
           const grouped = new Map();
           matches.forEach((match) => {
@@ -694,8 +706,27 @@
           return [...grouped.entries()]
             .sort((a, b) => b[1].games - a[1].games || b[1].wins - a[1].wins)
             .slice(0, 6)
-            .map(([champion, item]) => `<span class="coach-chip">${escapeHtml(champion)} <strong>${item.wins}W-${item.games - item.wins}L - ${fmt(item.kda / item.games, 1)} KDA</strong></span>`)
+            .map(([champion, item]) => {
+              const title = `${champion}: ${item.wins}W-${item.games - item.wins}L - ${fmt(item.kda / item.games, 1)} KDA`;
+              return `
+                <span class="coach-icon-chip champion" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
+                  <img src="${escapeHtml(championIcon(champion))}" alt="${escapeHtml(champion)}">
+                  <strong>${item.games}</strong>
+                </span>
+              `;
+            })
             .join("") || '<span class="coach-chip">No champion sample</span>';
+        }
+
+        function pickRoleIcons(match) {
+          const role = roleLabel(match.role);
+          const title = `${match.champion || "Unknown"} - ${role}`;
+          return `
+            <span class="coach-icon-pair" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
+              <img class="coach-table-icon champion" src="${escapeHtml(championIcon(match.champion))}" alt="${escapeHtml(match.champion || "Unknown champion")}">
+              <img class="coach-table-icon role" src="${escapeHtml(roleIcon(match.role))}" alt="${escapeHtml(role)}">
+            </span>
+          `;
         }
 
         function matchIssue(match) {
@@ -717,7 +748,7 @@
               <tr>
                 <td>${escapeHtml(formatDateTime(match.gameStart))}</td>
                 <td>${escapeHtml(queueLabel(match.queueId))}</td>
-                <td>${escapeHtml(match.champion)} - ${escapeHtml(roleLabel(match.role))}</td>
+                <td>${pickRoleIcons(match)}</td>
                 <td class="${resultClass}">${escapeHtml(match.result)}</td>
                 <td>${escapeHtml(`${num(match.kills)}/${num(match.deaths)}/${num(match.assists)}`)} - ${fmt(match.kda, 2)}</td>
                 <td>${totalStat(match, "cs", "csMin")}</td>
@@ -827,7 +858,7 @@
                 <h4>Queue, role, and champion profile</h4>
                 <div class="coach-chip-row">
                   ${chipRows(queues, matches.length)}
-                  ${chipRows(roles, matches.length)}
+                  ${roleRows(roles, matches.length)}
                 </div>
                 <div class="coach-chip-row" style="margin-top: 8px;">
                   ${championRows(matches)}
@@ -898,7 +929,6 @@
           const data = window.RIFT_LAB_DATA;
           const term = key(document.querySelector("[data-note-search]")?.value || "");
           const models = (data.players || []).map(playerModel);
-          renderCoachOverview(models);
 
           const filtered = models.filter((model) => {
             if (!term) return true;
