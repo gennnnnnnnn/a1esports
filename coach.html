@@ -829,17 +829,6 @@
           `;
         }
 
-        function matchIssue(match) {
-          const issues = [];
-          if (num(match.deaths) >= 7) issues.push("death count");
-          if (num(match.csMin) < 5.8 && !/(support|utility)/i.test(match.role || "")) issues.push("CS leak");
-          if (num(match.visionMin) < 0.65) issues.push("vision low");
-          if (num(match.damageMin) < 600) issues.push("low damage");
-          if (!issues.length && match.result === "Win") return "clean conversion";
-          if (!issues.length) return "macro review";
-          return issues.join(", ");
-        }
-
         function matchTable(matches) {
           if (!matches.length) return "<p>No ranked match rows available yet.</p>";
           const rows = matches.map((match) => {
@@ -858,7 +847,6 @@
                 <td>${totalStat(match, "damage", "damageMin")}</td>
                 <td><div class="coach-build">${build.map(itemSlot).join("")}</div></td>
                 <td><div class="coach-spells">${spells.length ? spells.map(spellSlot).join("") : '<span class="build-pending">Spells pending</span>'}</div></td>
-                <td>${escapeHtml(matchIssue(match))}</td>
               </tr>
             `;
           }).join("");
@@ -876,7 +864,6 @@
                   <th>Damage</th>
                   <th>Build</th>
                   <th>Spells</th>
-                  <th>Review tag</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
