@@ -887,41 +887,54 @@
     const season = activeSeason(data);
     if (!season) return "";
 
-    const matches = activeSeasonMatches(data).filter((match) => normalizeKey(match.player) === normalizeKey(playerName));
+    const yearRange = scheduleYearRange(season);
+    const matches = (data.matches || []).filter((match) => {
+      const date = new Date(match.gameStart);
+      return normalizeKey(match.player) === normalizeKey(playerName)
+        && !Number.isNaN(date.getTime())
+        && date >= yearRange.start
+        && date < yearRange.end;
+    });
     const byDay = new Map();
     matches.forEach((match) => {
       const key = scheduleDateKey(match.gameStart);
-      const current = byDay.get(key) || { wins: 0, losses: 0 };
-      if (match.result === "Win") current.wins += 1;
-      else current.losses += 1;
+      const current = byDay.get(key) || scheduleEmptyRecord();
+      const bucket = Number(match.queueId) === 420 ? current.solo : current.flex;
+      if (match.result === "Win") {
+        current.wins += 1;
+        bucket.wins += 1;
+      } else {
+        current.losses += 1;
+        bucket.losses += 1;
+      }
       byDay.set(key, current);
     });
 
     const wins = matches.filter((match) => match.result === "Win").length;
     const losses = matches.length - wins;
-    const start = scheduleStartOfWeek(season.start);
+    const start = scheduleStartOfWeek(yearRange.start);
+    const seasonBoundaries = scheduleSeasonBoundaries(yearRange.year);
     const weeks = [];
-    for (let date = new Date(start); date < season.end; date = scheduleAddDays(date, 7)) {
+    for (let date = new Date(start); date < yearRange.end; date = scheduleAddDays(date, 7)) {
       weeks.push(new Date(date));
     }
 
     const monthCells = weeks.map((week, index) => {
-      const inSeasonDate = scheduleAddDays(week, Math.max(0, Math.ceil((season.start - week) / 86400000)));
-      const label = index === 0 || inSeasonDate.getUTCMonth() !== scheduleAddDays(weeks[index - 1], 6).getUTCMonth()
-        ? SCHEDULE_MONTH_LABELS[inSeasonDate.getUTCMonth()]
-        : "";
+      const label = scheduleMonthLabel(week, index, yearRange);
       return `<span>${escapeHtml(label)}</span>`;
     }).join("");
 
     const rows = SCHEDULE_DAY_LABELS.map((day, dayIndex) => {
-      const cells = weeks.map((week) => scheduleCell(scheduleAddDays(week, dayIndex), season, byDay)).join("");
+      const cells = weeks
+        .map((week) => scheduleCell(scheduleAddDays(week, dayIndex), yearRange, byDay, seasonBoundaries))
+        .join("");
       return `<div class="schedule-row"><span class="schedule-day-label">${day}</span>${cells}</div>`;
     }).join("");
 
     return `
       <section class="player-schedule" style="--weeks: ${weeks.length}">
         <div class="player-schedule-head">
-          <span>Season schedule</span>
+          <span>${escapeHtml(yearRange.year)} schedule</span>
           <strong>${formatNumber(wins)}W-${formatNumber(losses)}L</strong>
         </div>
         <div class="player-schedule-scroll">
@@ -936,15 +949,65 @@
     `;
   }
 
-  function scheduleCell(date, season, byDay) {
-    const outOfSeason = date < season.start || date >= season.end;
+  function scheduleEmptyRecord() {
+    return {
+      wins: 0,
+      losses: 0,
+      solo: { wins: 0, losses: 0 },
+      flex: { wins: 0, losses: 0 }
+    };
+  }
+
+  function scheduleCell(date, yearRange, byDay, seasonBoundaries) {
+    const outOfYear = date < yearRange.start || date >= yearRange.end;
     const key = scheduleDateKey(date);
-    const record = byDay.get(key) || { wins: 0, losses: 0 };
+    const record = byDay.get(key) || scheduleEmptyRecord();
     const games = record.wins + record.losses;
     const tone = !games ? "" : record.wins && record.losses ? "mixed" : record.wins ? "win" : "loss";
     const level = games ? `level-${Math.min(4, games)}` : "";
-    const label = `${formatScheduleDate(date)}: ${record.wins}W-${record.losses}L`;
-    return `<span class="schedule-cell ${outOfSeason ? "out" : ""} ${tone} ${level}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}"></span>`;
+    const seasonStart = scheduleIsBoundaryWeek(date, seasonBoundaries) ? "season-start" : "";
+    const title = scheduleCellTitle(date, record, outOfYear);
+    return `<span class="schedule-cell ${outOfYear ? "out" : ""} ${tone} ${level} ${seasonStart}" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">${games ? escapeHtml(games) : ""}</span>`;
+  }
+
+  function scheduleYearRange(season) {
+    const year = season.start.getUTCFullYear();
+    return {
+      year,
+      start: new Date(Date.UTC(year, 0, 1)),
+      end: new Date(Date.UTC(year + 1, 0, 1))
+    };
+  }
+
+  function scheduleSeasonBoundaries(year) {
+    return [
+      new Date(Date.UTC(year, 4, 1)),
+      new Date(Date.UTC(year, 8, 1))
+    ];
+  }
+
+  function scheduleIsBoundaryWeek(date, boundaries) {
+    const weekStart = scheduleStartOfWeek(date);
+    const weekEnd = scheduleAddDays(weekStart, 7);
+    return boundaries.some((boundary) => boundary >= weekStart && boundary < weekEnd);
+  }
+
+  function scheduleMonthLabel(week, index, yearRange) {
+    for (let day = 0; day < 7; day += 1) {
+      const date = scheduleAddDays(week, day);
+      if (date < yearRange.start || date >= yearRange.end) continue;
+      if (index === 0 || date.getUTCDate() === 1) return SCHEDULE_MONTH_LABELS[date.getUTCMonth()];
+    }
+    return "";
+  }
+
+  function scheduleCellTitle(date, record, outOfYear) {
+    if (outOfYear) return `${formatScheduleDate(date)}: outside selected year`;
+    return [
+      `${formatScheduleDate(date)}: ${record.wins + record.losses} games`,
+      `Solo/Duo: ${record.solo.wins}W - ${record.solo.losses}L`,
+      `Flex: ${record.flex.wins}W - ${record.flex.losses}L`
+    ].join("\n");
   }
 
   function scheduleStartOfWeek(date) {
@@ -968,6 +1031,10 @@
 
   function formatScheduleDate(date) {
     return `${SCHEDULE_MONTH_LABELS[date.getUTCMonth()]} ${date.getUTCDate()}`;
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/\n/g, "&#10;");
   }
 
   function playerLastSeen(playerName) {
