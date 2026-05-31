@@ -217,6 +217,7 @@
         border: 1px solid var(--line);
         border-radius: 6px;
         background: rgba(255, 255, 255, 0.035);
+        overflow-x: auto;
       }
 
       .coach-wide-block h4 {
@@ -280,8 +281,47 @@
         object-fit: contain;
       }
 
+      .coach-build,
+      .coach-spells {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        min-width: 120px;
+      }
+
+      .coach-spells {
+        min-width: 58px;
+      }
+
+      .coach-match-table .item-slot,
+      .coach-match-table .spell-slot {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+      }
+
+      .coach-player-select {
+        border-color: rgba(49, 215, 255, 0.72);
+        background: rgba(18, 22, 32, 0.94);
+        box-shadow: 0 0 0 1px rgba(49, 215, 255, 0.14);
+      }
+
+      .coach-player-select span {
+        color: #b8d7ff;
+        font-weight: 950;
+      }
+
+      .coach-player-select select {
+        width: min(300px, 56vw);
+        min-width: 250px;
+        border: 1px solid rgba(174, 181, 191, 0.18);
+        background: #20242d;
+        color: #f8fafc;
+      }
+
       .coach-match-table {
         width: 100%;
+        min-width: 1060px;
         border-collapse: collapse;
         color: #c3cede;
         font-size: 0.82rem;
@@ -355,7 +395,6 @@
         <a href="index.html" data-nav="home">Home</a>
         <a href="players.html" data-nav="players">Players</a>
         <a href="coach.html" data-nav="coach">Coach</a>
-        <a href="matches.html" data-nav="matches">Matches</a>
       </nav>
       <label class="header-season-control">
         <span>Season</span>
@@ -375,6 +414,12 @@
         <label class="search-field">
           <span>Search</span>
           <input type="search" data-note-search placeholder="Player, weakness, action">
+        </label>
+        <label class="select-field coach-player-select">
+          <span>Player</span>
+          <select data-coach-player-filter>
+            <option value="">Select player</option>
+          </select>
         </label>
       </section>
 
@@ -399,7 +444,6 @@
     <script>
       (() => {
         const LIMIT = 20;
-        const MAX_DIAGNOSTIC_ROWS = 8;
         const DATA_DRAGON_VERSION = "14.24.1";
         const CHAMPION_KEYS = {
           "Aurelion Sol": "AurelionSol",
@@ -430,8 +474,24 @@
           bottom: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-bottom.png",
           utility: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-utility.png"
         };
+        const SUMMONER_SPELLS = {
+          1: ["SummonerBoost", "Cleanse"],
+          3: ["SummonerExhaust", "Exhaust"],
+          4: ["SummonerFlash", "Flash"],
+          6: ["SummonerHaste", "Ghost"],
+          7: ["SummonerHeal", "Heal"],
+          11: ["SummonerSmite", "Smite"],
+          12: ["SummonerTeleport", "Teleport"],
+          13: ["SummonerMana", "Clarity"],
+          14: ["SummonerDot", "Ignite"],
+          21: ["SummonerBarrier", "Barrier"],
+          30: ["SummonerPoroRecall", "To the King!"],
+          31: ["SummonerPoroThrow", "Poro Toss"],
+          32: ["SummonerSnowball", "Mark"]
+        };
         let rendering = false;
         let lastSignature = "";
+        let selectedCoachPlayer = "";
 
         function key(value) {
           return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -477,12 +537,15 @@
         }
 
         function playerMatches(player) {
+          return playerSeasonMatches(player).slice(0, LIMIT);
+        }
+
+        function playerSeasonMatches(player) {
           const data = window.RIFT_LAB_DATA || {};
           const matches = window.RIFT_LAB_GET_ACTIVE_MATCHES ? window.RIFT_LAB_GET_ACTIVE_MATCHES() : (data.matches || []);
           return matches
             .filter((match) => key(match.player) === key(player.name) || key(match.riotId) === key(riotId(player)))
-            .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime())
-            .slice(0, LIMIT);
+            .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
         }
 
         function playerNote(player) {
@@ -577,11 +640,13 @@
         }
 
         function playerModel(player) {
-          const matches = playerMatches(player);
+          const seasonMatches = playerSeasonMatches(player);
+          const matches = seasonMatches.slice(0, LIMIT);
           const insight = buildInsights(matches);
           return {
             player,
             matches,
+            seasonMatches,
             note: playerNote(player),
             insight,
             priority: priorityInfo(insight, matches),
@@ -728,6 +793,42 @@
           `;
         }
 
+        function itemIcon(itemId) {
+          return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/item/${encodeURIComponent(itemId)}.png`;
+        }
+
+        function spellIcon(spellKey) {
+          return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/spell/${encodeURIComponent(spellKey)}.png`;
+        }
+
+        function matchBuild(match) {
+          const items = Array.isArray(match.items) ? match.items : [];
+          return items.slice(0, 7).concat(Array(7).fill(0)).slice(0, 7);
+        }
+
+        function matchSpells(match) {
+          return Array.isArray(match.summonerSpells) ? match.summonerSpells.slice(0, 2).filter(Boolean) : [];
+        }
+
+        function itemSlot(itemId, index) {
+          const id = num(itemId);
+          if (!id) return `<span class="item-slot empty" title="${index === 6 ? "No trinket" : "Empty item slot"}"></span>`;
+          return `
+            <span class="item-slot ${index === 6 ? "trinket" : ""}" title="${escapeHtml(index === 6 ? `Trinket ${id}` : `Item ${id}`)}">
+              <img src="${escapeHtml(itemIcon(id))}" alt="">
+            </span>
+          `;
+        }
+
+        function spellSlot(spellId) {
+          const spell = SUMMONER_SPELLS[num(spellId)] || ["SummonerFlash", `Spell ${num(spellId)}`];
+          return `
+            <span class="spell-slot" title="${escapeHtml(spell[1])}">
+              <img src="${escapeHtml(spellIcon(spell[0]))}" alt="${escapeHtml(spell[1])}">
+            </span>
+          `;
+        }
+
         function matchIssue(match) {
           const issues = [];
           if (num(match.deaths) >= 7) issues.push("death count");
@@ -741,8 +842,10 @@
 
         function matchTable(matches) {
           if (!matches.length) return "<p>No ranked match rows available yet.</p>";
-          const rows = matches.slice(0, MAX_DIAGNOSTIC_ROWS).map((match) => {
+          const rows = matches.map((match) => {
             const resultClass = match.result === "Win" ? "win" : "loss";
+            const build = matchBuild(match);
+            const spells = matchSpells(match);
             return `
               <tr>
                 <td>${escapeHtml(formatDateTime(match.gameStart))}</td>
@@ -753,6 +856,8 @@
                 <td>${totalStat(match, "cs", "csMin")}</td>
                 <td>${totalStat(match, "visionScore", "visionMin")}</td>
                 <td>${totalStat(match, "damage", "damageMin")}</td>
+                <td><div class="coach-build">${build.map(itemSlot).join("")}</div></td>
+                <td><div class="coach-spells">${spells.length ? spells.map(spellSlot).join("") : '<span class="build-pending">Spells pending</span>'}</div></td>
                 <td>${escapeHtml(matchIssue(match))}</td>
               </tr>
             `;
@@ -769,6 +874,8 @@
                   <th>CS</th>
                   <th>Vision</th>
                   <th>Damage</th>
+                  <th>Build</th>
+                  <th>Spells</th>
                   <th>Review tag</th>
                 </tr>
               </thead>
@@ -797,10 +904,10 @@
         }
 
         function card(model) {
-          const { player, matches, note, insight, priority, roles, queues } = model;
-          const lastPlayed = matches[0] ? formatDate(matches[0].gameStart) : "No match imported";
+          const { player, matches, seasonMatches, note, insight, priority, roles, queues } = model;
+          const lastPlayed = seasonMatches[0] ? formatDate(seasonMatches[0].gameStart) : "No match imported";
 
-          if (!matches.length) {
+          if (!seasonMatches.length) {
             return `
               <article class="coach-deep-card">
                 <div class="coach-deep-head">
@@ -823,10 +930,11 @@
               <div class="coach-deep-head">
                 <div>
                   <h3>${escapeHtml(riotId(player))}</h3>
-                  <p>${escapeHtml(note.scope || `Last ${matches.length} ranked games`)} - last imported match: ${escapeHtml(lastPlayed)}. This analysis uses Riot match rows currently available in the dashboard, capped at the latest ${LIMIT} games.</p>
+                  <p>Latest ${matches.length} ranked games - last imported match: ${escapeHtml(lastPlayed)}. Match history below covers all ${seasonMatches.length} selected-season games for this player.</p>
                   <div class="coach-head-meta">
                     <span class="coach-priority-chip ${escapeHtml(priority.tone)}">${escapeHtml(priority.label)}</span>
-                    <span class="coach-chip">${matches.length} game sample</span>
+                    <span class="coach-chip">${matches.length} game analysis sample</span>
+                    <span class="coach-chip">${seasonMatches.length} season matches</span>
                     <span class="coach-chip">${escapeHtml(priority.focus)}</span>
                   </div>
                 </div>
@@ -895,8 +1003,8 @@
               </div>
 
               <div class="coach-wide-block">
-                <h4>Recent match diagnostics</h4>
-                ${matchTable(matches)}
+                <h4>Match history</h4>
+                ${matchTable(seasonMatches)}
               </div>
             </article>
           `;
@@ -920,6 +1028,42 @@
           return "No single disaster metric dominates. Review macro conversion: resets, objective tempo, and side-wave assignment.";
         }
 
+        function setupCoachPlayerFilter(data) {
+          const select = document.querySelector("[data-coach-player-filter]");
+          if (!select) return selectedCoachPlayer;
+
+          const players = data.players || [];
+          const options = [
+            '<option value="">Select player</option>',
+            ...players.map((player) => {
+              const value = riotId(player);
+              return `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`;
+            })
+          ].join("");
+
+          if (select.dataset.options !== options) {
+            select.innerHTML = options;
+            select.dataset.options = options;
+          }
+
+          if (!players.some((player) => key(riotId(player)) === key(selectedCoachPlayer))) {
+            selectedCoachPlayer = "";
+          }
+
+          select.value = selectedCoachPlayer;
+
+          if (select.dataset.bound !== "1") {
+            select.addEventListener("change", () => {
+              selectedCoachPlayer = select.value;
+              lastSignature = "";
+              renderDeepCoach();
+            });
+            select.dataset.bound = "1";
+          }
+
+          return selectedCoachPlayer;
+        }
+
         function renderDeepCoach() {
           if (rendering || !window.RIFT_LAB_DATA) return;
           const node = document.querySelector("[data-notes-list]");
@@ -927,20 +1071,35 @@
 
           const data = window.RIFT_LAB_DATA;
           const term = key(document.querySelector("[data-note-search]")?.value || "");
+          const selected = setupCoachPlayerFilter(data);
           const models = (data.players || []).map(playerModel);
 
+          if (!selected) {
+            const countNode = document.querySelector("[data-coach-count]");
+            if (countNode) countNode.textContent = "Select one player";
+            const signature = `${window.RIFT_LAB_SELECTED_SEASON || ""}|none|${activeMatches().length}|${(data.matches || []).length}`;
+            if (signature === lastSignature && node.classList.contains("coach-deep-list")) return;
+            lastSignature = signature;
+            rendering = true;
+            node.classList.add("coach-deep-list");
+            node.innerHTML = '<div class="empty-state"><strong>Select a player</strong><span>Choose one player from the dropdown to review coach notes and season match history.</span></div>';
+            rendering = false;
+            return;
+          }
+
           const filtered = models.filter((model) => {
+            if (key(riotId(model.player)) !== key(selected)) return false;
             if (!term) return true;
             const payload = JSON.stringify(model).toLowerCase();
             return key(payload).includes(term);
           });
           const countNode = document.querySelector("[data-coach-count]");
           if (countNode) {
-            const games = filtered.reduce((sum, model) => sum + model.matches.length, 0);
-            countNode.textContent = `${filtered.length} players - ${games} reviewed games`;
+            const games = filtered.reduce((sum, model) => sum + model.seasonMatches.length, 0);
+            countNode.textContent = filtered.length ? `${selected} - ${games} season matches` : `${selected} - no match sample`;
           }
 
-          const signature = `${window.RIFT_LAB_SELECTED_SEASON || ""}|${term}|${filtered.map((model) => model.player.name).join("|")}|${activeMatches().length}|${(data.matches || []).length}`;
+          const signature = `${window.RIFT_LAB_SELECTED_SEASON || ""}|${selected}|${term}|${filtered.map((model) => model.player.name).join("|")}|${activeMatches().length}|${(data.matches || []).length}`;
           if (signature === lastSignature && node.classList.contains("coach-deep-list")) return;
           lastSignature = signature;
 

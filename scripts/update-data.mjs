@@ -4,7 +4,7 @@ import path from "node:path";
 const ACCOUNT_REGION = "asia";
 const MATCH_REGION = "sea";
 const PLATFORM_REGION = "vn2";
-const MATCH_COUNT_PER_QUEUE = Number(process.env.MATCH_COUNT_PER_QUEUE || 20);
+const MATCH_COUNT_PER_QUEUE = Number(process.env.MATCH_COUNT_PER_QUEUE || 50);
 const RECENT_MATCH_LIMIT = Number(process.env.RECENT_MATCH_LIMIT || 20);
 const RANKED_QUEUES = [420, 440];
 const OUTPUT_PATH = path.resolve("data/rift-lab.json");
@@ -16,7 +16,8 @@ const TRACKED_PLAYERS = [
   { name: "Tian laoshi#2252", riotName: "Tian laoshi", tag: "2252" },
   { name: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207", riotName: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng", tag: "1207" },
   { name: "HoangLiuMu#2252", riotName: "HoangLiuMu", tag: "2252" },
-  { name: "25 Tu\u1ed5i L\u1ea5y V\u1ee3#1207", riotName: "25 Tu\u1ed5i L\u1ea5y V\u1ee3", tag: "1207" }
+  { name: "25 Tu\u1ed5i L\u1ea5y V\u1ee3#1207", riotName: "25 Tu\u1ed5i L\u1ea5y V\u1ee3", tag: "1207" },
+  { name: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3#skepy", riotName: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3", tag: "skepy" }
 ];
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
@@ -76,7 +77,7 @@ async function buildRiftLabData() {
     players,
     summaryRows,
     latestNotes,
-    matches: matches.slice(0, 160),
+    matches,
     metrics: {
       trackedPlayers: players.length,
       importedMatches: matches.length,

@@ -7,6 +7,8 @@
   const MATCH_FILTERS = { queue: "all", champion: "", player: "all" };
   const NOTE_FILTERS = { search: "" };
   const DATA_DRAGON_VERSION = "14.24.1";
+  const SCHEDULE_DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const SCHEDULE_MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const SAMPLE_DATA = {
     updatedAt: "2026-05-23T09:00:00.000Z",
@@ -873,9 +875,99 @@
               <div class="champion-row">${insights.champions.map(championAvatar).join("")}</div>
             </div>
           </div>
+
+          ${document.body.dataset.page === "players" ? playerSchedule(player.name) : ""}
         </div>
       </article>
     `;
+  }
+
+  function playerSchedule(playerName) {
+    const data = window.RIFT_LAB_DATA || {};
+    const season = activeSeason(data);
+    if (!season) return "";
+
+    const matches = activeSeasonMatches(data).filter((match) => normalizeKey(match.player) === normalizeKey(playerName));
+    const byDay = new Map();
+    matches.forEach((match) => {
+      const key = scheduleDateKey(match.gameStart);
+      const current = byDay.get(key) || { wins: 0, losses: 0 };
+      if (match.result === "Win") current.wins += 1;
+      else current.losses += 1;
+      byDay.set(key, current);
+    });
+
+    const wins = matches.filter((match) => match.result === "Win").length;
+    const losses = matches.length - wins;
+    const start = scheduleStartOfWeek(season.start);
+    const weeks = [];
+    for (let date = new Date(start); date < season.end; date = scheduleAddDays(date, 7)) {
+      weeks.push(new Date(date));
+    }
+
+    const monthCells = weeks.map((week, index) => {
+      const inSeasonDate = scheduleAddDays(week, Math.max(0, Math.ceil((season.start - week) / 86400000)));
+      const label = index === 0 || inSeasonDate.getUTCMonth() !== scheduleAddDays(weeks[index - 1], 6).getUTCMonth()
+        ? SCHEDULE_MONTH_LABELS[inSeasonDate.getUTCMonth()]
+        : "";
+      return `<span>${escapeHtml(label)}</span>`;
+    }).join("");
+
+    const rows = SCHEDULE_DAY_LABELS.map((day, dayIndex) => {
+      const cells = weeks.map((week) => scheduleCell(scheduleAddDays(week, dayIndex), season, byDay)).join("");
+      return `<div class="schedule-row"><span class="schedule-day-label">${day}</span>${cells}</div>`;
+    }).join("");
+
+    return `
+      <section class="player-schedule" style="--weeks: ${weeks.length}">
+        <div class="player-schedule-head">
+          <span>Season schedule</span>
+          <strong>${formatNumber(wins)}W-${formatNumber(losses)}L</strong>
+        </div>
+        <div class="player-schedule-scroll">
+          <div class="schedule-months"><span></span>${monthCells}</div>
+          ${rows}
+        </div>
+        <div class="schedule-legend">
+          <span>Daily ranked record</span>
+          <span>Green wins, red losses</span>
+        </div>
+      </section>
+    `;
+  }
+
+  function scheduleCell(date, season, byDay) {
+    const outOfSeason = date < season.start || date >= season.end;
+    const key = scheduleDateKey(date);
+    const record = byDay.get(key) || { wins: 0, losses: 0 };
+    const games = record.wins + record.losses;
+    const tone = !games ? "" : record.wins && record.losses ? "mixed" : record.wins ? "win" : "loss";
+    const level = games ? `level-${Math.min(4, games)}` : "";
+    const label = `${formatScheduleDate(date)}: ${record.wins}W-${record.losses}L`;
+    return `<span class="schedule-cell ${outOfSeason ? "out" : ""} ${tone} ${level}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}"></span>`;
+  }
+
+  function scheduleStartOfWeek(date) {
+    const value = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const offset = (value.getUTCDay() + 6) % 7;
+    value.setUTCDate(value.getUTCDate() - offset);
+    return value;
+  }
+
+  function scheduleAddDays(date, days) {
+    const value = new Date(date);
+    value.setUTCDate(value.getUTCDate() + days);
+    return value;
+  }
+
+  function scheduleDateKey(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+  }
+
+  function formatScheduleDate(date) {
+    return `${SCHEDULE_MONTH_LABELS[date.getUTCMonth()]} ${date.getUTCDate()}`;
   }
 
   function playerLastSeen(playerName) {

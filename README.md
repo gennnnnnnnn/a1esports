@@ -19,8 +19,7 @@ The browser never calls Riot directly. It only fetches the public processed JSON
 ```text
 index.html                         Home dashboard
 players.html                       Solo/Duo and Flex player cards
-coach.html                         AI coach notes
-matches.html                       Recent match cards and filters
+coach.html                         AI coach board and match history
 css/style.css                      Responsive dashboard styling
 js/app.js                          Fetch, normalize, and render logic
 js/config.example.js               Frontend data URL
