@@ -926,10 +926,11 @@
 
     const rows = SCHEDULE_DAY_LABELS.map((day, dayIndex) => {
       const cells = weeks
-        .map((week) => scheduleCell(scheduleAddDays(week, dayIndex), yearRange, byDay, seasonBoundaries))
+        .map((week) => scheduleCell(scheduleAddDays(week, dayIndex), yearRange, byDay))
         .join("");
       return `<div class="schedule-row"><span class="schedule-day-label">${day}</span>${cells}</div>`;
     }).join("");
+    const separators = scheduleSeparatorMarkers(weeks, seasonBoundaries);
 
     return `
       <section class="player-schedule" style="--weeks: ${weeks.length}">
@@ -938,12 +939,15 @@
           <strong>${formatNumber(wins)}W-${formatNumber(losses)}L</strong>
         </div>
         <div class="player-schedule-scroll">
-          <div class="schedule-months"><span></span>${monthCells}</div>
-          ${rows}
+          <div class="schedule-grid">
+            <div class="schedule-months"><span></span>${monthCells}</div>
+            ${rows}
+            ${separators}
+          </div>
         </div>
         <div class="schedule-legend">
           <span>Daily ranked record</span>
-          <span>Green wins, red losses</span>
+          <span>Numbers show games played; hover for queue split</span>
         </div>
       </section>
     `;
@@ -958,16 +962,13 @@
     };
   }
 
-  function scheduleCell(date, yearRange, byDay, seasonBoundaries) {
+  function scheduleCell(date, yearRange, byDay) {
     const outOfYear = date < yearRange.start || date >= yearRange.end;
     const key = scheduleDateKey(date);
     const record = byDay.get(key) || scheduleEmptyRecord();
     const games = record.wins + record.losses;
-    const tone = !games ? "" : record.wins && record.losses ? "mixed" : record.wins ? "win" : "loss";
-    const level = games ? `level-${Math.min(4, games)}` : "";
-    const seasonStart = scheduleIsBoundaryWeek(date, seasonBoundaries) ? "season-start" : "";
     const title = scheduleCellTitle(date, record, outOfYear);
-    return `<span class="schedule-cell ${outOfYear ? "out" : ""} ${tone} ${level} ${seasonStart}" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">${games ? escapeHtml(games) : ""}</span>`;
+    return `<span class="schedule-cell ${outOfYear ? "out" : ""} ${games ? "has-games" : ""}" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">${games ? escapeHtml(games) : ""}</span>`;
   }
 
   function scheduleYearRange(season) {
@@ -986,10 +987,15 @@
     ];
   }
 
-  function scheduleIsBoundaryWeek(date, boundaries) {
-    const weekStart = scheduleStartOfWeek(date);
-    const weekEnd = scheduleAddDays(weekStart, 7);
-    return boundaries.some((boundary) => boundary >= weekStart && boundary < weekEnd);
+  function scheduleSeparatorMarkers(weeks, boundaries) {
+    return boundaries.map((boundary, index) => {
+      const weekIndex = weeks.findIndex((week) => {
+        const weekEnd = scheduleAddDays(week, 7);
+        return boundary >= week && boundary < weekEnd;
+      });
+      if (weekIndex < 0) return "";
+      return `<span class="schedule-season-separator" style="--week-index: ${weekIndex}" title="${escapeAttr(`${SCHEDULE_MONTH_LABELS[boundary.getUTCMonth()]} starts Season ${index + 2}`)}"></span>`;
+    }).join("");
   }
 
   function scheduleMonthLabel(week, index, yearRange) {
