@@ -403,6 +403,7 @@
 
     return {
       updatedAt: read(data, ["updatedAt", "lastUpdated", "Last Updated"]) || new Date().toISOString(),
+      source: read(data, ["source", "Source"]) || {},
       players,
       summaryRows,
       latestNotes,
@@ -550,7 +551,7 @@
     const controls = document.querySelectorAll("[data-global-season-select]");
     if (!controls.length) return;
 
-    const seasons = seasonsFromMatches(data.matches);
+    const seasons = seasonsFromMatches(data.matches, data.source);
     const stored = storageGet(SEASON_STORAGE_KEY);
     const selected = seasons.some((season) => season.key === stored) ? stored : seasons[0]?.key || "";
     setActiveSeason(selected, seasons);
@@ -589,7 +590,7 @@
   }
 
   function activeSeason(data) {
-    const seasons = seasonsFromMatches(data.matches || []);
+    const seasons = seasonsFromMatches(data.matches || [], data.source);
     return seasons.find((season) => season.key === window.RIFT_LAB_SELECTED_SEASON) || seasons[0] || null;
   }
 
@@ -599,8 +600,23 @@
     return matchesForSeason(data.matches || [], season);
   }
 
-  function seasonsFromMatches(matches) {
+  function seasonsFromMatches(matches, source = {}) {
     const byKey = new Map();
+    const firstYear = Number(source.historyStartYear) || 0;
+    const currentSeason = seasonOf(new Date());
+
+    if (firstYear) {
+      for (let year = firstYear; year <= currentSeason.start.getUTCFullYear(); year += 1) {
+        const lastBlock = year === currentSeason.start.getUTCFullYear()
+          ? Number(currentSeason.key.split("-S")[1]) || 3
+          : 3;
+        for (let block = 1; block <= lastBlock; block += 1) {
+          const season = seasonOf(new Date(Date.UTC(year, block === 1 ? 0 : block === 2 ? 4 : 8, 1)));
+          byKey.set(season.key, season);
+        }
+      }
+    }
+
     (matches || []).forEach((match) => {
       if (!match || !match.gameStart) return;
       const season = seasonOf(match.gameStart);
