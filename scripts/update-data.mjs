@@ -5,9 +5,13 @@ const ACCOUNT_REGION = "asia";
 const MATCH_REGION = "sea";
 const PLATFORM_REGION = "vn2";
 const MATCH_COUNT_PER_QUEUE = Number(process.env.MATCH_COUNT_PER_QUEUE || 50);
+const HISTORY_START_YEAR = Number(process.env.HISTORY_START_YEAR || 2022);
+const HISTORICAL_MATCH_COUNT_PER_QUEUE = Number(process.env.HISTORICAL_MATCH_COUNT_PER_QUEUE || 20);
+const HISTORICAL_BACKFILL = process.env.HISTORICAL_BACKFILL !== "false";
 const RECENT_MATCH_LIMIT = Number(process.env.RECENT_MATCH_LIMIT || 20);
 const RANKED_QUEUES = [420, 440];
 const OUTPUT_PATH = path.resolve("data/rift-lab.json");
+const EXISTING_DATA_URL = process.env.EXISTING_DATA_URL || "https://gennnnnnnnn.github.io/a1esports/data/rift-lab.json";
 const USE_SAMPLE = process.argv.includes("--sample");
 
 const TRACKED_PLAYERS = [
@@ -43,8 +47,14 @@ async function main() {
 
 async function buildRiftLabData() {
   const matchDetailCache = new Map();
+  const existingData = await loadExistingData();
+  const matchesByKey = new Map();
   const players = [];
-  const matches = [];
+
+  for (const match of existingData.matches || []) {
+    const key = matchRowKey(match);
+    if (key) matchesByKey.set(key, match);
+  }
 
   for (const tracked of TRACKED_PLAYERS) {
     console.log(`Refreshing ${tracked.name} (${tracked.riotName}#${tracked.tag})`);
@@ -55,11 +65,17 @@ async function buildRiftLabData() {
     const player = await buildPlayer(tracked, account.puuid);
     players.push(player);
 
-    const playerMatches = await fetchPlayerMatches(player, matchDetailCache);
-    matches.push(...playerMatches);
+    const playerMatches = await fetchPlayerMatches(player, matchDetailCache, matchesByKey);
+    mergeMatches(matchesByKey, playerMatches);
+
+    const historicalMatches = await fetchHistoricalMatches(player, matchDetailCache, matchesByKey);
+    mergeMatches(matchesByKey, historicalMatches);
   }
 
-  matches.sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
+  const trackedNames = new Set(players.map((player) => player.name));
+  const matches = [...matchesByKey.values()]
+    .filter((match) => trackedNames.has(match.player))
+    .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
 
   const summaryRows = buildSummaryRows(players, matches);
   const latestNotes = buildLatestNotes(players, matches);
@@ -72,7 +88,10 @@ async function buildRiftLabData() {
       matchRegion: MATCH_REGION,
       platformRegion: PLATFORM_REGION,
       rankedQueues: RANKED_QUEUES,
-      recentMatchLimit: RECENT_MATCH_LIMIT
+      recentMatchLimit: RECENT_MATCH_LIMIT,
+      historyStartYear: HISTORY_START_YEAR,
+      historicalBackfill: HISTORICAL_BACKFILL,
+      historicalMatchCountPerQueue: HISTORICAL_MATCH_COUNT_PER_QUEUE
     },
     players,
     summaryRows,
@@ -146,7 +165,7 @@ function applyRank(player, mode, entry) {
   player[`${mode}Wr`] = winRate(player[`${mode}Wins`], player[`${mode}Losses`]);
 }
 
-async function fetchPlayerMatches(player, matchDetailCache) {
+async function fetchPlayerMatches(player, matchDetailCache, existingMatches) {
   const rows = [];
   const ids = [];
 
@@ -163,12 +182,60 @@ async function fetchPlayerMatches(player, matchDetailCache) {
   const uniqueIds = [...new Map(ids.map((item) => [item.matchId, item])).values()];
 
   for (const { matchId } of uniqueIds) {
+    const existing = existingMatches.get(matchRowKey({ matchId, player: player.name }));
+    if (existing) {
+      rows.push(existing);
+      continue;
+    }
+
     const match = await getMatchDetail(matchId, matchDetailCache);
     const participant = match.info.participants.find((entry) => entry.puuid === player.puuid);
     if (!participant || !RANKED_QUEUES.includes(match.info.queueId)) continue;
 
     rows.push(toMatchRow(player, match, participant));
     await sleep(120);
+  }
+
+  return rows;
+}
+
+async function fetchHistoricalMatches(player, matchDetailCache, existingMatches) {
+  if (!HISTORICAL_BACKFILL || !HISTORICAL_MATCH_COUNT_PER_QUEUE || !HISTORY_START_YEAR) return [];
+
+  const rows = [];
+  const currentYear = new Date().getUTCFullYear();
+
+  for (let year = HISTORY_START_YEAR; year <= currentYear; year += 1) {
+    for (const season of seasonWindowsForYear(year)) {
+      for (const queueId of RANKED_QUEUES) {
+        const existingCount = countExistingMatches(existingMatches, player.name, queueId, season.start, season.end);
+        if (existingCount >= HISTORICAL_MATCH_COUNT_PER_QUEUE) continue;
+
+        const matchIds = await riotFetch(
+          `https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=0&count=${HISTORICAL_MATCH_COUNT_PER_QUEUE}&queue=${queueId}&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
+        );
+
+        console.log(
+          `${player.name}: ${matchIds.length} historical ${queueLabel(queueId)} matches for ${season.label}`
+        );
+
+        for (const matchId of matchIds) {
+          const key = matchRowKey({ matchId, player: player.name });
+          if (existingMatches.has(key)) continue;
+
+          const match = await getMatchDetail(matchId, matchDetailCache);
+          const participant = match.info.participants.find((entry) => entry.puuid === player.puuid);
+          if (!participant || !RANKED_QUEUES.includes(match.info.queueId)) continue;
+
+          const row = toMatchRow(player, match, participant);
+          rows.push(row);
+          existingMatches.set(matchRowKey(row), row);
+          await sleep(120);
+        }
+
+        await sleep(120);
+      }
+    }
   }
 
   return rows;
@@ -280,6 +347,78 @@ function buildLatestNotes(players, matches) {
       actions: "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     };
   });
+}
+
+async function loadExistingData() {
+  try {
+    const response = await fetch(EXISTING_DATA_URL, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "RiftLabDataUpdater"
+      }
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    console.log(`Loaded ${Array.isArray(data.matches) ? data.matches.length : 0} existing deployed matches`);
+    return data;
+  } catch (remoteError) {
+    try {
+      const text = await readFile(OUTPUT_PATH, "utf8");
+      const data = JSON.parse(text);
+      console.warn(`Using local existing data after remote load failed: ${remoteError.message}`);
+      return data;
+    } catch {
+      console.warn(`No existing data loaded: ${remoteError.message}`);
+      return { matches: [] };
+    }
+  }
+}
+
+function mergeMatches(matchesByKey, rows) {
+  rows.forEach((row) => {
+    const key = matchRowKey(row);
+    if (key) matchesByKey.set(key, row);
+  });
+}
+
+function matchRowKey(match) {
+  if (!match || !match.matchId || !match.player) return "";
+  return `${match.matchId}|${match.player}`;
+}
+
+function seasonWindowsForYear(year) {
+  return [
+    {
+      label: `${year} Season 1`,
+      start: new Date(Date.UTC(year, 0, 1)),
+      end: new Date(Date.UTC(year, 4, 1))
+    },
+    {
+      label: `${year} Season 2`,
+      start: new Date(Date.UTC(year, 4, 1)),
+      end: new Date(Date.UTC(year, 8, 1))
+    },
+    {
+      label: `${year} Season 3`,
+      start: new Date(Date.UTC(year, 8, 1)),
+      end: new Date(Date.UTC(year + 1, 0, 1))
+    }
+  ];
+}
+
+function countExistingMatches(matchesByKey, playerName, queueId, start, end) {
+  let count = 0;
+  for (const match of matchesByKey.values()) {
+    if (match.player !== playerName || Number(match.queueId) !== Number(queueId)) continue;
+    const date = new Date(match.gameStart);
+    if (!Number.isNaN(date.getTime()) && date >= start && date < end) count += 1;
+  }
+  return count;
+}
+
+function toUnixSeconds(date) {
+  return Math.floor(date.getTime() / 1000);
 }
 
 function makeMatchNote(part, durationMin, cs) {
