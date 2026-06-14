@@ -92,7 +92,7 @@
       .league-player-card .form-radar svg {
         display: block;
         width: 100%;
-        height: 176px;
+        height: 190px;
         margin-top: 0;
       }
 
@@ -109,18 +109,24 @@
         stroke-width: 2;
       }
 
-      .league-player-card .radar-label {
+      .league-player-card .radar-meta {
         fill: #aeb5bf;
-        font-size: 8px;
+        font-size: 7.5px;
         font-weight: 800;
         dominant-baseline: middle;
       }
 
       .league-player-card .radar-value {
         fill: #f8fafc;
-        font-size: 12px;
-        font-weight: 850;
+        font-size: 12.5px;
+        font-weight: 900;
         dominant-baseline: middle;
+      }
+
+      .league-player-card .radar-rank {
+        fill: #f2c15b;
+        font-size: 7px;
+        font-weight: 850;
       }
     </style>
   </head>
@@ -265,47 +271,89 @@
           record.title = `Last ${matches.length} ranked games`;
         }
 
-        function radarMetrics(matches) {
+        function radarMetricValues(matches) {
+          const hasGames = matches.length > 0;
           const wins = matches.filter((match) => match.result === "Win").length;
+          const wr = hasGames ? wins / matches.length : 0;
+          const kda = average(matches, "kda");
+          const csMin = average(matches, "csMin");
+          const visionMin = average(matches, "visionMin");
+          const damageMin = average(matches, "damageMin");
+          const goldMin = average(matches, "goldMin");
+          const cs = average(matches, "cs");
+          const deaths = average(matches, "deaths");
+
           return [
-            { label: "WR", value: matches.length ? `${Math.round((wins / matches.length) * 100)}%` : "0%", score: matches.length ? wins / matches.length : 0 },
-            { label: "KDA", value: average(matches, "kda").toFixed(2), score: clamp(average(matches, "kda") / 5) },
-            { label: "CS/M", value: average(matches, "csMin").toFixed(1), score: clamp(average(matches, "csMin") / 8) },
-            { label: "VIS/M", value: average(matches, "visionMin").toFixed(2), score: clamp(average(matches, "visionMin") / 1.3) },
-            { label: "DMG/M", value: Math.round(average(matches, "damageMin")).toString(), score: clamp(average(matches, "damageMin") / 1000) },
-            { label: "GOLD/M", value: Math.round(average(matches, "goldMin")).toString(), score: clamp(average(matches, "goldMin") / 500) },
-            { label: "CS", value: Math.round(average(matches, "cs")).toString(), score: clamp(average(matches, "cs") / 260) },
-            { label: "DTH", value: average(matches, "deaths").toFixed(1), score: clamp(1 - average(matches, "deaths") / 9) }
+            { id: "wr", label: "WR", value: `${Math.round(wr * 100)}%`, rankValue: hasGames ? wr : null, higherBetter: true, score: hasGames ? wr : 0 },
+            { id: "kda", label: "KDA", value: kda.toFixed(2), rankValue: hasGames ? kda : null, higherBetter: true, score: clamp(kda / 5) },
+            { id: "csm", label: "CS/M", value: csMin.toFixed(1), rankValue: hasGames ? csMin : null, higherBetter: true, score: clamp(csMin / 8) },
+            { id: "vism", label: "VIS/M", value: visionMin.toFixed(2), rankValue: hasGames ? visionMin : null, higherBetter: true, score: clamp(visionMin / 1.3) },
+            { id: "dmgm", label: "DMG/M", value: Math.round(damageMin).toString(), rankValue: hasGames ? damageMin : null, higherBetter: true, score: clamp(damageMin / 1000) },
+            { id: "goldm", label: "GOLD/M", value: Math.round(goldMin).toString(), rankValue: hasGames ? goldMin : null, higherBetter: true, score: clamp(goldMin / 500) },
+            { id: "cs", label: "CS", value: Math.round(cs).toString(), rankValue: hasGames ? cs : null, higherBetter: true, score: clamp(cs / 260) },
+            { id: "dth", label: "DTH", value: deaths.toFixed(1), rankValue: hasGames ? deaths : null, higherBetter: false, score: clamp(1 - deaths / 9) }
           ];
         }
 
-        function radarSvg(matches) {
-          const values = radarMetrics(matches);
-          const cx = 110;
-          const cy = 92;
-          const r = 48;
+        function rankedRadarMetrics(player, matches) {
+          const data = window.RIFT_LAB_DATA || {};
+          const players = data.players || [];
+          const total = players.length || 1;
+          const currentKey = key(player.name);
+          const playerMetrics = players.map((entry) => ({
+            key: key(entry.name),
+            metrics: new Map(radarMetricValues(recentMatches(entry)).map((metric) => [metric.id, metric]))
+          }));
+
+          return radarMetricValues(matches).map((metric) => {
+            const current = playerMetrics.find((entry) => entry.key === currentKey)?.metrics.get(metric.id);
+            const ownValue = current?.rankValue;
+            const values = playerMetrics
+              .map((entry) => entry.metrics.get(metric.id)?.rankValue)
+              .filter((value) => Number.isFinite(value));
+            const better = Number.isFinite(ownValue)
+              ? values.filter((value) => metric.higherBetter ? value > ownValue : value < ownValue).length
+              : null;
+            return {
+              ...metric,
+              rank: better === null ? `(-/${total})` : `(${better + 1}/${total})`
+            };
+          });
+        }
+
+        function radarSvg(player, matches) {
+          const values = rankedRadarMetrics(player, matches);
+          const cx = 135;
+          const cy = 98;
+          const r = 50;
           const point = (ratio, index) => {
             const angle = -Math.PI / 2 + (index * 2 * Math.PI) / values.length;
             return [cx + Math.cos(angle) * r * ratio, cy + Math.sin(angle) * r * ratio];
           };
-          const textAnchor = (x) => Math.abs(x - cx) < 8 ? "middle" : x > cx ? "start" : "end";
+          const positions = {
+            wr: { x: 135, y: 17, anchor: "middle" },
+            kda: { x: 204, y: 42, anchor: "start" },
+            csm: { x: 218, y: 99, anchor: "start" },
+            vism: { x: 196, y: 157, anchor: "start" },
+            dmgm: { x: 135, y: 177, anchor: "middle" },
+            goldm: { x: 74, y: 157, anchor: "end" },
+            cs: { x: 52, y: 99, anchor: "end" },
+            dth: { x: 66, y: 42, anchor: "end" }
+          };
           const polygon = values.map((metric, index) => point(metric.score, index).join(",")).join(" ");
           const grid = [0.33, 0.66, 1].map((ratio) => `<polygon class="radar-grid" points="${values.map((_, index) => point(ratio, index).join(",")).join(" ")}" />`).join("");
           const axes = values.map((_, index) => `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${point(1, index)[0]}" y2="${point(1, index)[1]}" />`).join("");
-          const labels = values.map((metric, index) => {
-            const [labelX, labelY] = point(1.2, index);
-            const [valueX, valueY] = point(1.55, index);
-            const anchor = textAnchor(valueX);
-            const labelAnchor = textAnchor(labelX);
+          const labels = values.map((metric) => {
+            const pos = positions[metric.id];
             return `
-              <text class="radar-label" x="${labelX.toFixed(1)}" y="${(labelY + 3).toFixed(1)}" text-anchor="${labelAnchor}">${metric.label}</text>
-              <text class="radar-value" x="${valueX.toFixed(1)}" y="${(valueY + 4).toFixed(1)}" text-anchor="${anchor}">${metric.value}</text>
+              <text class="radar-value" x="${pos.x}" y="${pos.y}" text-anchor="${pos.anchor}">${metric.value}</text>
+              <text class="radar-meta" x="${pos.x}" y="${pos.y + 13}" text-anchor="${pos.anchor}">${metric.label} <tspan class="radar-rank">${metric.rank}</tspan></text>
             `;
           }).join("");
-          return `<svg viewBox="0 0 220 180" role="img" aria-label="Last ${matches.length} games form radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
+          return `<svg viewBox="0 0 270 196" role="img" aria-label="Last ${matches.length} games form radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
         }
 
-        function patchRadar(card, matches) {
+        function patchRadar(card, player, matches) {
           let radar = card.querySelector(".form-radar");
           if (!matches.length) {
             radar?.remove();
@@ -319,7 +367,7 @@
           const signature = matches.map((match) => match.matchId || match.gameStart).join("|");
           if (radar.dataset.signature === signature) return;
           radar.dataset.signature = signature;
-          radar.innerHTML = `<div class="form-radar-header"><span>Last ${matches.length} form</span><span>Radar</span></div>${radarSvg(matches)}`;
+          radar.innerHTML = `<div class="form-radar-header"><span>Last ${matches.length} form</span><span>Radar</span></div>${radarSvg(player, matches)}`;
         }
 
         function upgradeCards() {
@@ -333,7 +381,7 @@
             if (!player) return;
             const matches = recentMatches(player);
             patchRecentRecord(card, matches);
-            patchRadar(card, matches);
+            patchRadar(card, player, matches);
           });
         }
 
