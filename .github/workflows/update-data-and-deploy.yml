@@ -38,6 +38,7 @@ jobs:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           HISTORY_START_YEAR: 2022
           HISTORICAL_MATCH_COUNT_PER_QUEUE: 20
+          ENRICH_MISSING_MATCH_LIMIT: 160
           HISTORICAL_BACKFILL: ${{ github.event_name == 'schedule' && 'false' || 'true' }}
         run: npm run update:data
 

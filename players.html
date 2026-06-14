@@ -254,8 +254,21 @@
           return matches.length ? matches.reduce((sum, match) => sum + (Number(match[field]) || 0), 0) / matches.length : 0;
         }
 
+        function averageAvailable(matches, field, requireStatVersion = false) {
+          const values = matches
+            .filter((match) => !requireStatVersion || Number(match.matchStatVersion) >= 2)
+            .map((match) => Number(match[field]))
+            .filter((value) => Number.isFinite(value));
+          return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+        }
+
         function clamp(value) {
           return Math.max(0.08, Math.min(1, value));
+        }
+
+        function metricValue(value, decimals = 1, suffix = "") {
+          if (!Number.isFinite(value)) return "—";
+          return `${value.toFixed(decimals)}${suffix}`;
         }
 
         function patchRecentRecord(card, matches) {
@@ -280,18 +293,18 @@
           const visionMin = average(matches, "visionMin");
           const damageMin = average(matches, "damageMin");
           const goldMin = average(matches, "goldMin");
-          const cs = average(matches, "cs");
-          const deaths = average(matches, "deaths");
+          const killParticipation = averageAvailable(matches, "killParticipation", true);
+          const damageShare = averageAvailable(matches, "damageShare", true);
 
           return [
             { id: "wr", label: "WR", value: `${Math.round(wr * 100)}%`, rankValue: hasGames ? wr : null, higherBetter: true, score: hasGames ? wr : 0 },
+            { id: "kp", label: "KP%", value: metricValue(killParticipation, 0, "%"), rankValue: killParticipation, higherBetter: true, score: clamp((killParticipation || 0) / 75) },
             { id: "kda", label: "KDA", value: kda.toFixed(2), rankValue: hasGames ? kda : null, higherBetter: true, score: clamp(kda / 5) },
             { id: "csm", label: "CS/M", value: csMin.toFixed(1), rankValue: hasGames ? csMin : null, higherBetter: true, score: clamp(csMin / 8) },
-            { id: "vism", label: "VIS/M", value: visionMin.toFixed(2), rankValue: hasGames ? visionMin : null, higherBetter: true, score: clamp(visionMin / 1.3) },
+            { id: "gpm", label: "GPM", value: Math.round(goldMin).toString(), rankValue: hasGames ? goldMin : null, higherBetter: true, score: clamp(goldMin / 500) },
             { id: "dmgm", label: "DMG/M", value: Math.round(damageMin).toString(), rankValue: hasGames ? damageMin : null, higherBetter: true, score: clamp(damageMin / 1000) },
-            { id: "goldm", label: "GOLD/M", value: Math.round(goldMin).toString(), rankValue: hasGames ? goldMin : null, higherBetter: true, score: clamp(goldMin / 500) },
-            { id: "cs", label: "CS", value: Math.round(cs).toString(), rankValue: hasGames ? cs : null, higherBetter: true, score: clamp(cs / 260) },
-            { id: "dth", label: "DTH", value: deaths.toFixed(1), rankValue: hasGames ? deaths : null, higherBetter: false, score: clamp(1 - deaths / 9) }
+            { id: "dmgp", label: "DMG%", value: metricValue(damageShare, 0, "%"), rankValue: damageShare, higherBetter: true, score: clamp((damageShare || 0) / 35) },
+            { id: "vism", label: "VSPM", value: visionMin.toFixed(2), rankValue: hasGames ? visionMin : null, higherBetter: true, score: clamp(visionMin / 1.3) }
           ];
         }
 
@@ -332,13 +345,13 @@
           };
           const positions = {
             wr: { x: 135, y: 17, anchor: "middle" },
-            kda: { x: 204, y: 42, anchor: "start" },
-            csm: { x: 218, y: 99, anchor: "start" },
-            vism: { x: 196, y: 157, anchor: "start" },
-            dmgm: { x: 135, y: 177, anchor: "middle" },
-            goldm: { x: 74, y: 157, anchor: "end" },
-            cs: { x: 52, y: 99, anchor: "end" },
-            dth: { x: 66, y: 42, anchor: "end" }
+            kp: { x: 204, y: 42, anchor: "start" },
+            kda: { x: 218, y: 99, anchor: "start" },
+            csm: { x: 196, y: 157, anchor: "start" },
+            gpm: { x: 135, y: 177, anchor: "middle" },
+            dmgm: { x: 74, y: 157, anchor: "end" },
+            dmgp: { x: 52, y: 99, anchor: "end" },
+            vism: { x: 66, y: 42, anchor: "end" }
           };
           const polygon = values.map((metric, index) => point(metric.score, index).join(",")).join(" ");
           const grid = [0.33, 0.66, 1].map((ratio) => `<polygon class="radar-grid" points="${values.map((_, index) => point(ratio, index).join(",")).join(" ")}" />`).join("");

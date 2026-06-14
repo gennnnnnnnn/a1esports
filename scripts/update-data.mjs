@@ -7,9 +7,11 @@ const PLATFORM_REGION = "vn2";
 const MATCH_COUNT_PER_QUEUE = Number(process.env.MATCH_COUNT_PER_QUEUE || 50);
 const HISTORY_START_YEAR = Number(process.env.HISTORY_START_YEAR || 2022);
 const HISTORICAL_MATCH_COUNT_PER_QUEUE = Number(process.env.HISTORICAL_MATCH_COUNT_PER_QUEUE || 20);
+const ENRICH_MISSING_MATCH_LIMIT = Number(process.env.ENRICH_MISSING_MATCH_LIMIT || 160);
 const HISTORICAL_BACKFILL = process.env.HISTORICAL_BACKFILL !== "false";
 const RECENT_MATCH_LIMIT = Number(process.env.RECENT_MATCH_LIMIT || 20);
 const RANKED_QUEUES = [420, 440];
+const MATCH_STAT_VERSION = 2;
 const OUTPUT_PATH = path.resolve("data/rift-lab.json");
 const EXISTING_DATA_URL = process.env.EXISTING_DATA_URL || "https://gennnnnnnnn.github.io/a1esports/data/rift-lab.json";
 const USE_SAMPLE = process.argv.includes("--sample");
@@ -26,6 +28,7 @@ const TRACKED_PLAYERS = [
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
 const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
+let enrichMissingRemaining = ENRICH_MISSING_MATCH_LIMIT;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -91,7 +94,8 @@ async function buildRiftLabData() {
       recentMatchLimit: RECENT_MATCH_LIMIT,
       historyStartYear: HISTORY_START_YEAR,
       historicalBackfill: HISTORICAL_BACKFILL,
-      historicalMatchCountPerQueue: HISTORICAL_MATCH_COUNT_PER_QUEUE
+      historicalMatchCountPerQueue: HISTORICAL_MATCH_COUNT_PER_QUEUE,
+      matchStatVersion: MATCH_STAT_VERSION
     },
     players,
     summaryRows,
@@ -183,7 +187,7 @@ async function fetchPlayerMatches(player, matchDetailCache, existingMatches) {
 
   for (const { matchId } of uniqueIds) {
     const existing = existingMatches.get(matchRowKey({ matchId, player: player.name }));
-    if (existing) {
+    if (existing && !needsStatRefresh(existing)) {
       rows.push(existing);
       continue;
     }
@@ -209,7 +213,10 @@ async function fetchHistoricalMatches(player, matchDetailCache, existingMatches)
     for (const season of seasonWindowsForYear(year)) {
       for (const queueId of RANKED_QUEUES) {
         const existingCount = countExistingMatches(existingMatches, player.name, queueId, season.start, season.end);
-        if (existingCount >= HISTORICAL_MATCH_COUNT_PER_QUEUE) continue;
+        if (existingCount >= HISTORICAL_MATCH_COUNT_PER_QUEUE) {
+          await enrichExistingMatchesForWindow(player, matchDetailCache, existingMatches, queueId, season);
+          continue;
+        }
 
         const matchIds = await riotFetch(
           `https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=0&count=${HISTORICAL_MATCH_COUNT_PER_QUEUE}&queue=${queueId}&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
@@ -221,7 +228,8 @@ async function fetchHistoricalMatches(player, matchDetailCache, existingMatches)
 
         for (const matchId of matchIds) {
           const key = matchRowKey({ matchId, player: player.name });
-          if (existingMatches.has(key)) continue;
+          const existing = existingMatches.get(key);
+          if (existing && !needsStatRefresh(existing)) continue;
 
           const match = await getMatchDetail(matchId, matchDetailCache);
           const participant = match.info.participants.find((entry) => entry.puuid === player.puuid);
@@ -241,6 +249,32 @@ async function fetchHistoricalMatches(player, matchDetailCache, existingMatches)
   return rows;
 }
 
+async function enrichExistingMatchesForWindow(player, matchDetailCache, existingMatches, queueId, season) {
+  if (enrichMissingRemaining <= 0) return;
+
+  const rows = [...existingMatches.values()]
+    .filter((match) => match.player === player.name && Number(match.queueId) === Number(queueId) && needsStatRefresh(match))
+    .filter((match) => {
+      const date = new Date(match.gameStart);
+      return !Number.isNaN(date.getTime()) && date >= season.start && date < season.end;
+    })
+    .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime())
+    .slice(0, enrichMissingRemaining);
+
+  for (const row of rows) {
+    const match = await getMatchDetail(row.matchId, matchDetailCache);
+    const participant = match.info.participants.find((entry) => entry.puuid === player.puuid);
+    if (!participant || !RANKED_QUEUES.includes(match.info.queueId)) continue;
+
+    const updated = toMatchRow(player, match, participant);
+    existingMatches.set(matchRowKey(updated), updated);
+    enrichMissingRemaining -= 1;
+    await sleep(120);
+
+    if (enrichMissingRemaining <= 0) break;
+  }
+}
+
 async function getMatchDetail(matchId, cache) {
   if (!cache.has(matchId)) {
     cache.set(
@@ -254,6 +288,7 @@ async function getMatchDetail(matchId, cache) {
 
 function toMatchRow(player, match, part) {
   const durationMin = (Number(match.info.gameDuration) || 0) / 60;
+  const team = (match.info.participants || []).filter((entry) => entry.teamId === part.teamId);
   const deaths = Number(part.deaths) || 0;
   const kills = Number(part.kills) || 0;
   const assists = Number(part.assists) || 0;
@@ -261,8 +296,15 @@ function toMatchRow(player, match, part) {
   const damage = Number(part.totalDamageDealtToChampions) || 0;
   const gold = Number(part.goldEarned) || 0;
   const visionScore = Number(part.visionScore) || 0;
+  const teamKills = sumBy(team, "kills");
+  const teamDeaths = sumBy(team, "deaths");
+  const teamDamage = sumBy(team, "totalDamageDealtToChampions");
+  const wardsPlaced = Number(part.wardsPlaced) || 0;
+  const wardsKilled = Number(part.wardsKilled) || 0;
+  const objectiveDamage = Number(part.damageDealtToObjectives) || 0;
 
   return {
+    matchStatVersion: MATCH_STAT_VERSION,
     matchId: match.metadata.matchId,
     gameStart: new Date(Number(match.info.gameStartTimestamp) || Date.now()).toISOString(),
     gameVersion: match.info.gameVersion || "",
@@ -284,8 +326,20 @@ function toMatchRow(player, match, part) {
     visionMin: round(durationMin ? visionScore / durationMin : 0),
     damage,
     damageMin: round(durationMin ? damage / durationMin : 0),
+    teamKills,
+    teamDamage,
+    killParticipation: round(teamKills ? ((kills + assists) / teamKills) * 100 : 0),
+    damageShare: round(teamDamage ? (damage / teamDamage) * 100 : 0),
+    teamDeaths,
+    deathShare: round(teamDeaths ? (deaths / teamDeaths) * 100 : 0),
     gold,
     goldMin: round(durationMin ? gold / durationMin : 0),
+    wardsPlaced,
+    wardsPlacedMin: round(durationMin ? wardsPlaced / durationMin : 0),
+    wardsKilled,
+    wardsKilledMin: round(durationMin ? wardsKilled / durationMin : 0),
+    objectiveDamage,
+    objectiveDamageMin: round(durationMin ? objectiveDamage / durationMin : 0),
     items: [part.item0, part.item1, part.item2, part.item3, part.item4, part.item5, part.item6]
       .map((item) => Number(item) || 0),
     summonerSpells: [part.summoner1Id, part.summoner2Id].map((spell) => Number(spell) || 0),
@@ -417,6 +471,14 @@ function countExistingMatches(matchesByKey, playerName, queueId, start, end) {
   return count;
 }
 
+function needsStatRefresh(match) {
+  return Number(match?.matchStatVersion) < MATCH_STAT_VERSION ||
+    match?.killParticipation === undefined ||
+    match?.damageShare === undefined ||
+    match?.wardsPlacedMin === undefined ||
+    match?.objectiveDamageMin === undefined;
+}
+
 function toUnixSeconds(date) {
   return Math.floor(date.getTime() / 1000);
 }
@@ -520,6 +582,10 @@ function queueLabel(queueId) {
 function average(rows, key) {
   if (!rows.length) return 0;
   return rows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0) / rows.length;
+}
+
+function sumBy(rows, key) {
+  return rows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
 }
 
 function winRate(wins, losses) {
