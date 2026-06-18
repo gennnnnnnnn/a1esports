@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="rift-lab-api" content="">
     <title>Rift Lab | A1 eSports</title>
-    <link rel="stylesheet" href="css/style.css?v=20260618-1">
+    <link rel="stylesheet" href="css/style.css?v=20260605-1">
     <style>
       .team-hero {
         grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
@@ -187,29 +187,11 @@
         stroke-width: 2;
       }
 
-      .chart-average-line {
-        stroke: rgba(242, 193, 91, 0.72);
-        stroke-width: 1.5;
-        stroke-dasharray: 6 5;
-      }
-
-      .chart-average-label {
-        fill: #f2c15b;
-        font-size: 9px;
-        font-weight: 850;
-      }
-
       .chart-label,
       .radar-label {
         fill: #aeb5bf;
         font-size: 10px;
         font-weight: 800;
-      }
-
-      .radar-value-label {
-        fill: #f4f7fb;
-        font-size: 11px;
-        font-weight: 900;
       }
 
       .radar-area {
@@ -380,8 +362,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260618-1"></script>
-    <script src="js/app.js?v=20260618-1"></script>
+    <script src="js/config.example.js?v=20260605-1"></script>
+    <script src="js/app.js?v=20260605-1"></script>
     <script>
       (() => {
         const SEASON_STORAGE_KEY = "riftLabSeasonKey";
@@ -428,8 +410,22 @@
           return { games: rows.length, wins, losses, wr: rows.length ? (wins / rows.length) * 100 : 0 };
         }
 
-        function uniqueMatchCount(rows) {
-          return new Set(rows.map((row) => row.matchId).filter(Boolean)).size;
+        function rankStat(data, queueId) {
+          const total = (data.players || []).reduce((sum, player) => {
+            if (queueId === 420) {
+              sum.wins += num(player.soloWins);
+              sum.losses += num(player.soloLosses);
+            } else if (queueId === 440) {
+              sum.wins += num(player.flexWins);
+              sum.losses += num(player.flexLosses);
+            } else {
+              sum.wins += num(player.soloWins) + num(player.flexWins);
+              sum.losses += num(player.soloLosses) + num(player.flexLosses);
+            }
+            return sum;
+          }, { wins: 0, losses: 0 });
+          const games = total.wins + total.losses;
+          return { games, wins: total.wins, losses: total.losses, wr: games ? (total.wins / games) * 100 : 0 };
         }
 
         function seasonOf(dateLike) {
@@ -524,14 +520,15 @@
           return seasons.find((season) => season.key === selectedSeasonKey) || seasons[0];
         }
 
-        function renderMetrics(season, matches) {
+        function renderMetrics(season, matches, data, useRankTotals) {
           const node = document.querySelector("[data-home-metrics]");
           if (!node) return;
-          const s = stat(matches);
-          const solo = stat(matches.filter((match) => Number(match.queueId) === 420));
-          const flex = stat(matches.filter((match) => Number(match.queueId) === 440));
+          const s = useRankTotals ? rankStat(data) : stat(matches);
+          const solo = useRankTotals ? rankStat(data, 420) : stat(matches.filter((match) => Number(match.queueId) === 420));
+          const flex = useRankTotals ? rankStat(data, 440) : stat(matches.filter((match) => Number(match.queueId) === 440));
+          const source = useRankTotals ? "current ranked account totals" : `${season.label} · imported match rows`;
           node.innerHTML = [
-            metricCard("Season Games", String(s.games), `${uniqueMatchCount(matches)} unique match IDs`),
+            metricCard("Season Games", String(s.games), source),
             metricCard("Season Win Rate", pct(s.wr), `${s.wins}W-${s.losses}L`),
             metricCard("Solo/Duo", pct(solo.wr), `${solo.wins}W-${solo.losses}L`),
             metricCard("Flex", pct(flex.wr), `${flex.wins}W-${flex.losses}L`),
@@ -540,21 +537,21 @@
           ].join("");
         }
 
-        function renderHero(season, matches) {
+        function renderHero(season, matches, data, useRankTotals) {
           const node = document.querySelector("[data-team-hero]");
           if (!node) return;
-          const s = stat(matches);
-          const uniqueMatches = uniqueMatchCount(matches);
+          const s = useRankTotals ? rankStat(data) : stat(matches);
           const roles = groupBy(matches, (match) => roleLabel(match.role));
           const queues = groupBy(matches, (match) => queueLabel(match.queueId));
           const topRole = roles[0] ? `${roles[0][0]} (${roles[0][1].length})` : "No role data";
           const topQueue = queues[0] ? `${queues[0][0]} (${queues[0][1].length})` : "No queue data";
+          const totalLabel = useRankTotals ? "ranked account games" : "imported seasonal ranked games";
           node.innerHTML = `
             <div class="team-scoreboard">
               <div class="team-score-main">
                 <span>${escapeHtml(`${season.label} · ${season.range}`)}</span>
                 <strong>${escapeHtml(pct(s.wr))}</strong>
-                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} tracked-player games - ${uniqueMatches} unique matches`)}</small>
+                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} ${totalLabel}`)}</small>
               </div>
               <div class="team-score-grid">
                 <div class="team-score-item"><span>Avg KDA</span><strong>${escapeHtml(fmt(avg(matches, "kda"), 2))}</strong><small>season average</small></div>
@@ -566,31 +563,13 @@
           `;
         }
 
-        function weekStart(dateLike) {
-          const date = new Date(dateLike);
-          if (Number.isNaN(date.getTime())) return null;
-          const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-          start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
-          return start;
-        }
-
-        function shortDate(dateLike) {
-          const date = new Date(dateLike);
-          return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(date);
-        }
-
-        function weeklyWinRateChart(matches) {
-          if (!matches.length) return '<p>No match data available for this season yet.</p>';
-          const grouped = new Map();
-          matches.forEach((match) => {
-            const start = weekStart(match.gameStart);
-            if (!start) return;
-            const key = start.toISOString();
-            if (!grouped.has(key)) grouped.set(key, { start, rows: [] });
-            grouped.get(key).rows.push(match);
+        function lineChart(matches) {
+          const sample = [...matches].reverse();
+          if (!sample.length) return '<p>No match data available for this season yet.</p>';
+          const points = sample.map((_, index) => {
+            const block = sample.slice(Math.max(0, index - 4), index + 1);
+            return stat(block).wr;
           });
-          const weeks = [...grouped.values()].sort((a, b) => a.start - b.start);
-          const points = weeks.map((week) => stat(week.rows).wr);
           const width = 420;
           const height = 220;
           const left = 36;
@@ -608,77 +587,50 @@
           const area = `${left},${height - bottom} ${polyline} ${left + usableW},${height - bottom}`;
           const dots = points.map((value, index) => {
             const [x, y] = xy(value, index);
-            const s = stat(weeks[index].rows);
-            return `<circle class="chart-dot" cx="${x}" cy="${y}" r="4"><title>Week of ${shortDate(weeks[index].start)}: ${Math.round(value)}% - ${s.wins}W-${s.losses}L (${s.games} games)</title></circle>`;
+            return `<circle class="chart-dot" cx="${x}" cy="${y}" r="3.5"><title>${Math.round(value)}% rolling WR</title></circle>`;
           }).join("");
           const grid = [0, 25, 50, 75, 100].map((value) => {
             const y = top + (1 - value / 100) * usableH;
             return `<line class="chart-grid-line" x1="${left}" y1="${y}" x2="${left + usableW}" y2="${y}" /><text class="chart-label" x="4" y="${y + 4}">${value}%</text>`;
           }).join("");
-          const seasonAverage = stat(matches).wr;
-          const averageY = top + (1 - seasonAverage / 100) * usableH;
           return `
-            <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weekly season win-rate trend">
+            <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Season rolling win-rate trend">
               ${grid}
               <line class="chart-axis-line" x1="${left}" y1="${height - bottom}" x2="${left + usableW}" y2="${height - bottom}" />
-              <line class="chart-average-line" x1="${left}" y1="${averageY}" x2="${left + usableW}" y2="${averageY}" />
-              <text class="chart-average-label" x="${left + usableW - 2}" y="${averageY - 5}" text-anchor="end">Season ${Math.round(seasonAverage)}%</text>
               <polygon class="chart-fill" points="${area}" />
               <polyline class="chart-line" points="${polyline}" />
               ${dots}
-              <text class="chart-label" x="${left}" y="${height - 8}">${shortDate(weeks[0].start)}</text>
-              <text class="chart-label" x="${left + usableW}" y="${height - 8}" text-anchor="end">${shortDate(weeks[weeks.length - 1].start)}</text>
+              <text class="chart-label" x="${left}" y="${height - 8}">season start</text>
+              <text class="chart-label" x="${left + usableW - 34}" y="${height - 8}">latest</text>
             </svg>
           `;
         }
 
-        function avgAvailable(rows, field) {
-          const values = rows
-            .filter((row) => Number(row.matchStatVersion) >= 2)
-            .map((row) => Number(row[field]))
-            .filter((value) => Number.isFinite(value));
-          return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
-        }
-
         function radarChart(matches) {
           const s = stat(matches);
-          const kp = avgAvailable(matches, "killParticipation");
-          const damageShare = avgAvailable(matches, "damageShare");
           const values = [
-            { id: "wr", label: "WR", value: pct(s.wr), score: Math.min(1, s.wr / 100) },
-            { id: "kp", label: "KP%", value: kp === null ? "-" : pct(kp), score: Math.min(1, (kp || 0) / 75) },
-            { id: "kda", label: "KDA", value: fmt(avg(matches, "kda"), 2), score: Math.min(1, avg(matches, "kda") / 5) },
-            { id: "csm", label: "CS/M", value: fmt(avg(matches, "csMin"), 1), score: Math.min(1, avg(matches, "csMin") / 8) },
-            { id: "gpm", label: "GPM", value: String(Math.round(avg(matches, "goldMin"))), score: Math.min(1, avg(matches, "goldMin") / 500) },
-            { id: "dmgm", label: "DMG/M", value: String(Math.round(avg(matches, "damageMin"))), score: Math.min(1, avg(matches, "damageMin") / 1000) },
-            { id: "dmgp", label: "DMG%", value: damageShare === null ? "-" : pct(damageShare), score: Math.min(1, (damageShare || 0) / 35) },
-            { id: "vspm", label: "VSPM", value: fmt(avg(matches, "visionMin"), 2), score: Math.min(1, avg(matches, "visionMin") / 1.3) }
+            ["WR", Math.min(1, s.wr / 70)],
+            ["KDA", Math.min(1, avg(matches, "kda") / 5)],
+            ["CS", Math.min(1, avg(matches, "csMin") / 8)],
+            ["VIS", Math.min(1, avg(matches, "visionMin") / 1.3)],
+            ["DMG", Math.min(1, avg(matches, "damageMin") / 1000)],
+            ["SAFE", Math.max(0.08, Math.min(1, 1 - avg(matches, "deaths") / 8))]
           ];
           const cx = 210;
-          const cy = 124;
+          const cy = 112;
           const r = 78;
           const point = (ratio, index) => {
             const angle = -Math.PI / 2 + (index * 2 * Math.PI) / values.length;
             return [cx + Math.cos(angle) * r * ratio, cy + Math.sin(angle) * r * ratio];
           };
-          const positions = {
-            wr: { x: 210, y: 18, anchor: "middle" },
-            kp: { x: 310, y: 48, anchor: "start" },
-            kda: { x: 338, y: 124, anchor: "start" },
-            csm: { x: 306, y: 206, anchor: "start" },
-            gpm: { x: 210, y: 226, anchor: "middle" },
-            dmgm: { x: 114, y: 206, anchor: "end" },
-            dmgp: { x: 82, y: 124, anchor: "end" },
-            vspm: { x: 110, y: 48, anchor: "end" }
-          };
-          const polygon = values.map((metric, index) => point(Math.max(0.08, metric.score), index).join(",")).join(" ");
+          const polygon = values.map(([, value], index) => point(Math.max(0.08, value), index).join(",")).join(" ");
           const grid = [0.33, 0.66, 1].map((ratio) => `<polygon class="radar-grid" points="${values.map((_, index) => point(ratio, index).join(",")).join(" ")}" />`).join("");
           const axes = values.map((_, index) => `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${point(1, index)[0]}" y2="${point(1, index)[1]}" />`).join("");
-          const labels = values.map((metric) => {
-            const pos = positions[metric.id];
-            return `<text class="radar-label" x="${pos.x}" y="${pos.y}" text-anchor="${pos.anchor}">${metric.label}</text><text class="radar-value-label" x="${pos.x}" y="${pos.y + 13}" text-anchor="${pos.anchor}">${metric.value}</text>`;
+          const labels = values.map(([label], index) => {
+            const [x, y] = point(1.17, index);
+            return `<text class="radar-label" x="${x - 10}" y="${y + 4}">${label}</text>`;
           }).join("");
-          return `<svg viewBox="0 0 420 250" role="img" aria-label="Season team performance radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
+          return `<svg viewBox="0 0 420 230" role="img" aria-label="Season team performance radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
         }
 
         function bars(groups, labeler) {
@@ -723,7 +675,7 @@
         function seasonComparison(allMatches) {
           const seasons = seasonsFrom(allMatches);
           const groups = seasons.map((season) => [season.label, matchesForSeason(allMatches, season)]);
-          return bars(groups, (rows, s) => `${pct(s.wr)} - ${rows.length} games`);
+          return bars(groups, (rows, s) => `${pct(s.wr)} · ${rows.length}`);
         }
 
         function renderCharts(season, matches, allMatches) {
@@ -734,14 +686,14 @@
           node.innerHTML = `
             <article class="team-chart-card">
               <span class="chart-kicker">${escapeHtml(season.label)}</span>
-              <h3>Weekly Win Rate</h3>
-              <p>Weekly tracked-player record inside the selected season, with the season average shown as a dashed line.</p>
-              ${weeklyWinRateChart(matches)}
+              <h3>Season Rolling Win Rate</h3>
+              <p>Rolling 5-game win rate inside the selected season only.</p>
+              ${lineChart(matches)}
             </article>
             <article class="team-chart-card">
               <span class="chart-kicker">${escapeHtml(season.range)}</span>
               <h3>Season Performance Radar</h3>
-              <p>Pro-style seasonal snapshot: WR, KP, KDA, CS/M, GPM, DMG/M, damage share, and vision.</p>
+              <p>Normalized seasonal snapshot: win rate, KDA, CS, vision, damage, and death control.</p>
               ${radarChart(matches)}
             </article>
             <article class="team-chart-card">
@@ -772,11 +724,15 @@
           const seasons = seasonsFrom(allMatches);
           const season = renderSeasonSelect(seasons);
           const matches = matchesForSeason(allMatches, season);
-          const signature = `${season.key}|${allMatches.length}|${allMatches[0]?.matchId || ""}|${allMatches[0]?.gameStart || ""}`;
+          const useRankTotals = season.key === seasons[0]?.key;
+          const rankSignature = (data.players || []).map((player) => {
+            return [player.name, player.soloWins, player.soloLosses, player.flexWins, player.flexLosses].join(":");
+          }).join("|");
+          const signature = `${season.key}|${rankSignature}|${allMatches.length}|${allMatches[0]?.matchId || ""}|${allMatches[0]?.gameStart || ""}`;
           if (signature === lastSignature) return;
           lastSignature = signature;
-          renderHero(season, matches);
-          renderMetrics(season, matches);
+          renderHero(season, matches, data, useRankTotals);
+          renderMetrics(season, matches, data, useRankTotals);
           renderCharts(season, matches, allMatches);
         }
 

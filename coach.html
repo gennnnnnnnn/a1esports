@@ -6,7 +6,7 @@
     <meta name="rift-lab-api" content="">
     <title>Coach | Rift Lab</title>
     <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
-    <link rel="stylesheet" href="css/style.css?v=20260618-1">
+    <link rel="stylesheet" href="css/style.css?v=20260605-1">
     <style>
       .notes-grid.coach-deep-list {
         grid-template-columns: 1fr;
@@ -439,8 +439,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260618-1"></script>
-    <script src="js/app.js?v=20260618-1"></script>
+    <script src="js/config.example.js?v=20260605-1"></script>
+    <script src="js/app.js?v=20260605-1"></script>
     <script>
       (() => {
         const LIMIT = 20;
@@ -587,19 +587,13 @@
           return LANE_ICONS[roleKey(role)] || LANE_ICONS.utility;
         }
 
-        function dataDragonVersion(gameVersion) {
-          const source = gameVersion || window.RIFT_LAB_DATA?.matches?.[0]?.gameVersion || DATA_DRAGON_VERSION;
-          const match = String(source).match(/^(\d+)\.(\d+)/);
-          return match ? `${match[1]}.${match[2]}.1` : DATA_DRAGON_VERSION;
-        }
-
-        function championIcon(champion, gameVersion) {
+        function championIcon(champion) {
           const champKey = CHAMPION_KEYS[champion] || String(champion || "")
             .replace(/['.]/g, "")
             .replace(/&/g, "")
             .replace(/\s+/g, "");
           const safeKey = champKey && champKey !== "Unknown" ? champKey : "Yone";
-          return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/champion/${encodeURIComponent(safeKey)}.png`;
+          return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/champion/${encodeURIComponent(safeKey)}.png`;
         }
 
         function queueLabel(queueId) {
@@ -704,7 +698,7 @@
           const goals = [];
 
           if (stats.winRate >= 55) strengths.push(`Positive result profile: ${stats.wins}W-${stats.losses}L over the latest ${matches.length} games.`);
-          else weaknesses.push(`Result pressure: ${stats.wins}W-${stats.losses}L over the latest ${matches.length} ranked games.`);
+          else weaknesses.push(`Result pressure: ${stats.wins}W-${stats.losses}L. The sample says the player is not converting enough games.`);
 
           if (metricGrade(avgKda, 3.2, 2.0) === "good") strengths.push(`Good fight conversion with ${fmt(avgKda, 2)} average KDA.`);
           else if (metricGrade(avgKda, 3.2, 2.0) === "weak") weaknesses.push(`Low KDA at ${fmt(avgKda, 2)}. Either fights are bad, deaths are high, or both.`);
@@ -793,18 +787,18 @@
           const title = `${match.champion || "Unknown"} - ${role}`;
           return `
             <span class="coach-icon-pair" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">
-              <img class="coach-table-icon champion" src="${escapeHtml(championIcon(match.champion, match.gameVersion))}" alt="${escapeHtml(match.champion || "Unknown champion")}">
+              <img class="coach-table-icon champion" src="${escapeHtml(championIcon(match.champion))}" alt="${escapeHtml(match.champion || "Unknown champion")}">
               <img class="coach-table-icon role" src="${escapeHtml(roleIcon(match.role))}" alt="${escapeHtml(role)}">
             </span>
           `;
         }
 
-        function itemIcon(itemId, gameVersion) {
-          return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/item/${encodeURIComponent(itemId)}.png`;
+        function itemIcon(itemId) {
+          return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/item/${encodeURIComponent(itemId)}.png`;
         }
 
-        function spellIcon(spellKey, gameVersion) {
-          return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/spell/${encodeURIComponent(spellKey)}.png`;
+        function spellIcon(spellKey) {
+          return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/spell/${encodeURIComponent(spellKey)}.png`;
         }
 
         function matchBuild(match) {
@@ -816,21 +810,21 @@
           return Array.isArray(match.summonerSpells) ? match.summonerSpells.slice(0, 2).filter(Boolean) : [];
         }
 
-        function itemSlot(itemId, index, gameVersion) {
+        function itemSlot(itemId, index) {
           const id = num(itemId);
           if (!id) return `<span class="item-slot empty" title="${index === 6 ? "No trinket" : "Empty item slot"}"></span>`;
           return `
             <span class="item-slot ${index === 6 ? "trinket" : ""}" title="${escapeHtml(index === 6 ? `Trinket ${id}` : `Item ${id}`)}">
-              <img src="${escapeHtml(itemIcon(id, gameVersion))}" alt="" onerror="this.parentElement.classList.add('empty');this.remove()">
+              <img src="${escapeHtml(itemIcon(id))}" alt="">
             </span>
           `;
         }
 
-        function spellSlot(spellId, gameVersion) {
+        function spellSlot(spellId) {
           const spell = SUMMONER_SPELLS[num(spellId)] || ["SummonerFlash", `Spell ${num(spellId)}`];
           return `
             <span class="spell-slot" title="${escapeHtml(spell[1])}">
-              <img src="${escapeHtml(spellIcon(spell[0], gameVersion))}" alt="${escapeHtml(spell[1])}" onerror="this.parentElement.classList.add('empty');this.remove()">
+              <img src="${escapeHtml(spellIcon(spell[0]))}" alt="${escapeHtml(spell[1])}">
             </span>
           `;
         }
@@ -851,8 +845,8 @@
                 <td>${totalStat(match, "cs", "csMin")}</td>
                 <td>${totalStat(match, "visionScore", "visionMin")}</td>
                 <td>${totalStat(match, "damage", "damageMin")}</td>
-                <td><div class="coach-build">${build.map((item, index) => itemSlot(item, index, match.gameVersion)).join("")}</div></td>
-                <td><div class="coach-spells">${spells.length ? spells.map((spell) => spellSlot(spell, match.gameVersion)).join("") : '<span class="build-pending">Spells pending</span>'}</div></td>
+                <td><div class="coach-build">${build.map(itemSlot).join("")}</div></td>
+                <td><div class="coach-spells">${spells.length ? spells.map(spellSlot).join("") : '<span class="build-pending">Spells pending</span>'}</div></td>
               </tr>
             `;
           }).join("");

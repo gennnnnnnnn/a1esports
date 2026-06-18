@@ -1204,26 +1204,20 @@
     return value || "unranked";
   }
 
-  function dataDragonVersion(gameVersion) {
-    const source = gameVersion || window.RIFT_LAB_DATA?.matches?.[0]?.gameVersion || DATA_DRAGON_VERSION;
-    const match = String(source).match(/^(\d+)\.(\d+)/);
-    return match ? `${match[1]}.${match[2]}.1` : DATA_DRAGON_VERSION;
-  }
-
-  function championIcon(champion, gameVersion) {
+  function championIcon(champion) {
     const key = CHAMPION_KEYS[champion] || String(champion || "")
       .replace(/['.]/g, "")
       .replace(/&/g, "")
       .replace(/\s+/g, "");
 
     if (!key || key === "Unknown") {
-      return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/champion/Yone.png`;
+      return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/champion/Yone.png`;
     }
 
-    return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/champion/${encodeURIComponent(key)}.png`;
+    return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/champion/${encodeURIComponent(key)}.png`;
   }
 
-  function itemSlot(itemId, index, gameVersion) {
+  function itemSlot(itemId, index) {
     const id = toNumber(itemId);
     if (!id) {
       return `<span class="item-slot empty" title="${index === 6 ? "No trinket" : "Empty item slot"}"></span>`;
@@ -1231,7 +1225,7 @@
 
     return `
       <span class="item-slot ${index === 6 ? "trinket" : ""}" title="${escapeHtml(index === 6 ? `Trinket ${id}` : `Item ${id}`)}">
-        <img src="${escapeHtml(itemIcon(id, gameVersion))}" alt="" onerror="this.parentElement.classList.add('empty');this.remove()">
+        <img src="${escapeHtml(itemIcon(id))}" alt="">
       </span>
     `;
   }
@@ -1241,25 +1235,25 @@
     return items.length ? items.slice(0, 7).concat(Array(7).fill(0)).slice(0, 7) : [];
   }
 
-  function itemIcon(itemId, gameVersion) {
-    return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/item/${encodeURIComponent(itemId)}.png`;
+  function itemIcon(itemId) {
+    return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/item/${encodeURIComponent(itemId)}.png`;
   }
 
   function matchSpells(match) {
     return Array.isArray(match.summonerSpells) ? match.summonerSpells.slice(0, 2).filter(Boolean) : [];
   }
 
-  function spellSlot(spellId, gameVersion) {
+  function spellSlot(spellId) {
     const spell = SUMMONER_SPELLS[toNumber(spellId)] || ["SummonerFlash", `Spell ${formatNumber(spellId)}`];
     return `
       <span class="spell-slot" title="${escapeHtml(spell[1])}">
-        <img src="${escapeHtml(spellIcon(spell[0], gameVersion))}" alt="${escapeHtml(spell[1])}" onerror="this.parentElement.classList.add('empty');this.remove()">
+        <img src="${escapeHtml(spellIcon(spell[0]))}" alt="${escapeHtml(spell[1])}">
       </span>
     `;
   }
 
-  function spellIcon(spellKey, gameVersion) {
-    return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/spell/${encodeURIComponent(spellKey)}.png`;
+  function spellIcon(spellKey) {
+    return `https://ddragon.leagueoflegends.com/cdn/${DATA_DRAGON_VERSION}/img/spell/${encodeURIComponent(spellKey)}.png`;
   }
 
   function skinLabel(match) {
@@ -1327,9 +1321,9 @@
           </div>
           <div class="match-loadout">
             <span class="match-loadout-label">Final Build</span>
-            <div class="item-build">${build.length ? build.map((item, index) => itemSlot(item, index, match.gameVersion)).join("") : '<span class="build-pending">Build pending</span>'}</div>
+            <div class="item-build">${build.length ? build.map(itemSlot).join("") : '<span class="build-pending">Build pending</span>'}</div>
             <span class="match-loadout-label">Spells</span>
-            <div class="summoner-spells">${spells.length ? spells.map((spell) => spellSlot(spell, match.gameVersion)).join("") : '<span class="build-pending">Spells pending</span>'}</div>
+            <div class="summoner-spells">${spells.length ? spells.map(spellSlot).join("") : '<span class="build-pending">Spells pending</span>'}</div>
             <span class="skin-chip">${escapeHtml(skin)}</span>
           </div>
           ${match.aiNote ? `<p>${escapeHtml(match.aiNote)}</p>` : ""}
