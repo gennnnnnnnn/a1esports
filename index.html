@@ -428,8 +428,18 @@
           return { games: rows.length, wins, losses, wr: rows.length ? (wins / rows.length) * 100 : 0 };
         }
 
-        function uniqueMatchCount(rows) {
-          return new Set(rows.map((row) => row.matchId).filter(Boolean)).size;
+        function uniqueMatches(rows) {
+          const byId = new Map();
+          const withoutId = [];
+          rows.forEach((row) => {
+            const matchId = String(row.matchId || "").trim();
+            if (!matchId) {
+              withoutId.push(row);
+            } else if (!byId.has(matchId)) {
+              byId.set(matchId, row);
+            }
+          });
+          return [...byId.values(), ...withoutId];
         }
 
         function seasonOf(dateLike) {
@@ -527,11 +537,12 @@
         function renderMetrics(matches) {
           const node = document.querySelector("[data-home-metrics]");
           if (!node) return;
-          const s = stat(matches);
-          const solo = stat(matches.filter((match) => Number(match.queueId) === 420));
-          const flex = stat(matches.filter((match) => Number(match.queueId) === 440));
+          const games = uniqueMatches(matches);
+          const s = stat(games);
+          const solo = stat(games.filter((match) => Number(match.queueId) === 420));
+          const flex = stat(games.filter((match) => Number(match.queueId) === 440));
           node.innerHTML = [
-            metricCard("Season Player-Games", String(s.games), `${uniqueMatchCount(matches)} unique match IDs`),
+            metricCard("Season Games", String(s.games), "Deduplicated by match ID"),
             metricCard("Season Win Rate", pct(s.wr), `${s.wins}W-${s.losses}L`),
             metricCard("Solo/Duo", pct(solo.wr), `${solo.wins}W-${solo.losses}L`),
             metricCard("Flex", pct(flex.wr), `${flex.wins}W-${flex.losses}L`),
@@ -543,8 +554,7 @@
         function renderHero(season, matches) {
           const node = document.querySelector("[data-team-hero]");
           if (!node) return;
-          const s = stat(matches);
-          const uniqueMatches = uniqueMatchCount(matches);
+          const s = stat(uniqueMatches(matches));
           const roles = groupBy(matches, (match) => roleLabel(match.role));
           const queues = groupBy(matches, (match) => queueLabel(match.queueId));
           const topRole = roles[0] ? `${roles[0][0]} (${roles[0][1].length})` : "No role data";
@@ -554,7 +564,7 @@
               <div class="team-score-main">
                 <span>${escapeHtml(`${season.label} · ${season.range}`)}</span>
                 <strong>${escapeHtml(pct(s.wr))}</strong>
-                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} player-game rows (${uniqueMatches} unique matches)`)}</small>
+                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} unique matches`)}</small>
               </div>
               <div class="team-score-grid">
                 <div class="team-score-item"><span>Avg KDA</span><strong>${escapeHtml(fmt(avg(matches, "kda"), 2))}</strong><small>season average</small></div>
@@ -581,8 +591,9 @@
 
         function weeklyWinRateChart(matches) {
           if (!matches.length) return '<p>No match data available for this season yet.</p>';
+          const games = uniqueMatches(matches);
           const grouped = new Map();
-          matches.forEach((match) => {
+          games.forEach((match) => {
             const start = weekStart(match.gameStart);
             if (!start) return;
             const key = start.toISOString();
@@ -610,13 +621,13 @@
           const dots = points.map((value, index) => {
             const [x, y] = xy(value, index);
             const s = stat(weeks[index].rows);
-            return `<circle class="chart-dot" cx="${x}" cy="${y}" r="4"><title>Week of ${shortDate(weeks[index].start)}: ${Math.round(value)}% - ${s.wins}W-${s.losses}L (${s.games} player-games)</title></circle>`;
+            return `<circle class="chart-dot" cx="${x}" cy="${y}" r="4"><title>Week of ${shortDate(weeks[index].start)}: ${Math.round(value)}% - ${s.wins}W-${s.losses}L (${s.games} games)</title></circle>`;
           }).join("");
           const grid = [0, 25, 50, 75, 100].map((value) => {
             const y = top + (1 - value / 100) * usableH;
             return `<line class="chart-grid-line" x1="${left}" y1="${y}" x2="${left + usableW}" y2="${y}" /><text class="chart-label" x="4" y="${y + 4}">${value}%</text>`;
           }).join("");
-          const seasonAverage = stat(matches).wr;
+          const seasonAverage = stat(games).wr;
           const averageY = top + (1 - seasonAverage / 100) * usableH;
           const dateLabels = weeks.length === 1
             ? `<text class="chart-label" x="${left + usableW / 2}" y="${height - 8}" text-anchor="middle">Week of ${shortDate(weeks[0].start)}</text>`
@@ -645,7 +656,7 @@
 
         function radarChart(matches) {
           if (!matches.length) return '<p>No match data available for this season yet.</p>';
-          const s = stat(matches);
+          const s = stat(uniqueMatches(matches));
           const kp = avgAvailable(matches, "killParticipation");
           const damageShare = avgAvailable(matches, "damageShare");
           const values = [
@@ -726,20 +737,20 @@
 
         function seasonComparison(allMatches) {
           const seasons = seasonsFrom(allMatches);
-          const groups = seasons.map((season) => [season.label, matchesForSeason(allMatches, season)]);
-          return bars(groups, (rows, s) => `${pct(s.wr)} - ${rows.length} player-games`);
+          const groups = seasons.map((season) => [season.label, uniqueMatches(matchesForSeason(allMatches, season))]);
+          return bars(groups, (rows, s) => `${pct(s.wr)} - ${rows.length} games`);
         }
 
         function renderCharts(season, matches, allMatches) {
           const node = document.querySelector("[data-team-dashboard]");
           if (!node) return;
-          const queues = groupBy(matches, (match) => queueLabel(match.queueId));
+          const queues = groupBy(uniqueMatches(matches), (match) => queueLabel(match.queueId));
           const roles = groupBy(matches, (match) => roleLabel(match.role));
           node.innerHTML = `
             <article class="team-chart-card">
               <span class="chart-kicker">${escapeHtml(season.label)}</span>
               <h3>Weekly Win Rate</h3>
-              <p>Weekly player-game record inside the selected season, with the season average shown as a dashed line.</p>
+              <p>Weekly unique-match record inside the selected season, with the season average shown as a dashed line.</p>
               ${weeklyWinRateChart(matches)}
             </article>
             <article class="team-chart-card">
@@ -763,7 +774,7 @@
             <article class="team-chart-card" style="grid-column: 1 / -1;">
               <span class="chart-kicker">Season comparison</span>
               <h3>Available Seasons</h3>
-              <p>Imported player-game rows by season. One calendar year is split into Jan-Apr, May-Aug, and Sep-Dec.</p>
+              <p>Unique match IDs by season. One calendar year is split into Jan-Apr, May-Aug, and Sep-Dec.</p>
               ${seasonComparison(allMatches)}
             </article>
           `;
