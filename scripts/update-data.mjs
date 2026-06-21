@@ -23,7 +23,8 @@ const TRACKED_PLAYERS = [
   { name: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207", riotName: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng", tag: "1207" },
   { name: "HoangLiuMu#2252", riotName: "HoangLiuMu", tag: "2252" },
   { name: "25 Tu\u1ed5i L\u1ea5y V\u1ee3#1207", riotName: "25 Tu\u1ed5i L\u1ea5y V\u1ee3", tag: "1207" },
-  { name: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3#skepy", riotName: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3", tag: "skepy" }
+  { name: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3#skepy", riotName: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3", tag: "skepy" },
+  { name: "\u0110\u00e9o ch\u01a1i Aram#6887", riotName: "\u0110\u00e9o ch\u01a1i Aram", tag: "6887" }
 ];
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
