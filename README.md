@@ -50,7 +50,7 @@ After the workflow finishes, the site is served from:
 https://gennnnnnnnn.github.io/a1esports/
 ```
 
-The workflow also runs every 3 hours.
+The workflow also runs every 3 hours. Pushes deploy code quickly by reusing the currently deployed data file; scheduled and manual runs refresh Riot data before deploying.
 
 ## Local Commands
 

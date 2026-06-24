@@ -829,16 +829,20 @@ h3 {
 }
 
 .schedule-cell {
-  display: grid;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: var(--schedule-cell);
   height: var(--schedule-cell);
-  place-items: center;
+  padding: 0;
   border-radius: 2px;
   background: #111820;
   color: #f8fafc;
   font-size: 0.47rem;
   font-weight: 950;
-  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  line-height: var(--schedule-cell);
+  text-align: center;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
 }
 

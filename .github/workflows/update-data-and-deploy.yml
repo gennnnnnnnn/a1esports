@@ -29,11 +29,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node
+        if: github.event_name != 'push'
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Generate Riot data
+        if: github.event_name != 'push'
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           HISTORY_START_YEAR: 2022
@@ -42,6 +44,14 @@ jobs:
           RIOT_REQUEST_DELAY_MS: 1250
           HISTORICAL_BACKFILL: ${{ github.event_name == 'schedule' && 'false' || 'true' }}
         run: npm run update:data
+
+      - name: Reuse deployed data for code push
+        if: github.event_name == 'push'
+        run: |
+          mkdir -p data
+          curl --fail --location --retry 3 --retry-delay 2 \
+            --output data/rift-lab.json \
+            "https://gennnnnnnnn.github.io/a1esports/data/rift-lab.json?sha=${{ github.sha }}"
 
       - name: Prepare Pages artifact
         run: |
