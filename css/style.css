@@ -674,6 +674,10 @@ h3 {
 
 .league-extra {
   margin-top: 13px;
+  padding: 10px;
+  border: 1px solid #454a52;
+  border-radius: 4px;
+  background: #1f2124;
 }
 
 .league-extra > span {
@@ -685,87 +689,57 @@ h3 {
   text-transform: uppercase;
 }
 
-.lane-champion-row {
+.profile-chip-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 7px;
 }
 
-.lane-row,
-.champion-row {
-  display: flex;
-  align-items: center;
-  min-width: 0;
+.profile-chip-row + .profile-chip-row {
+  margin-top: 8px;
 }
 
-.lane-row {
-  gap: 5px;
-}
-
-.champion-row {
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-.lane-badge {
-  display: inline-grid;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 4px;
-  place-items: center;
-  border: 1px solid #474d55;
-  border-radius: 3px;
-  background: #22252a;
-  color: #737b87;
-  font-size: 0.52rem;
-  font-weight: 950;
-}
-
-.lane-badge.has-count {
-  grid-auto-flow: column;
-  grid-template-columns: auto auto;
-  gap: 4px;
-}
-
-.lane-badge strong {
-  color: #f8fafc;
-  font-size: 0.55rem;
-  line-height: 1;
-}
-
-.lane-badge.active {
-  border-color: rgba(220, 171, 64, 0.75);
-  color: #f3d38a;
-}
-
-.champion-avatar {
+.profile-chip,
+.profile-icon-chip {
   display: inline-flex;
   align-items: center;
-  width: auto;
-  min-width: 27px;
-  height: 27px;
-  overflow: hidden;
-  border: 1px solid #8c6d2b;
-  border-radius: 3px;
-  background: #22252a;
+  gap: 7px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 900;
 }
 
-.champion-avatar img {
-  display: block;
-  width: 27px;
-  height: 100%;
+.profile-chip.muted {
+  color: var(--muted);
+}
+
+.profile-icon-chip.active {
+  border-color: rgba(220, 171, 64, 0.75);
+  background: rgba(220, 171, 64, 0.1);
+}
+
+.profile-chip strong,
+.profile-icon-chip strong {
+  color: var(--text);
+}
+
+.profile-icon-chip img {
+  width: 24px;
+  height: 24px;
   object-fit: cover;
-  object-position: center;
+  border-radius: 4px;
 }
 
-.champion-avatar strong {
-  min-width: 18px;
-  padding: 0 5px;
-  color: #f8fafc;
-  font-size: 0.66rem;
-  font-weight: 950;
-  text-align: center;
+.profile-icon-chip.role img {
+  padding: 2px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .player-schedule {
@@ -1457,11 +1431,6 @@ h3 {
 
   .league-ranks {
     grid-template-columns: 1fr;
-  }
-
-  .lane-champion-row {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .match-card {

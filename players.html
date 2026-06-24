@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
     <link rel="preconnect" href="https://raw.communitydragon.org">
     <link rel="preconnect" href="https://opgg-static.akamaized.net">
-    <link rel="stylesheet" href="css/style.css?v=20260625-1">
+    <link rel="stylesheet" href="css/style.css?v=20260625-2">
     <style>
       .league-player-card .lol-brand > span:last-child,
       .league-player-card .peak-badge {
@@ -57,28 +57,6 @@
         transform: scale(1.18);
         transform-origin: center;
         filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.52));
-      }
-
-      .league-player-card .lane-badge.has-icon {
-        background-position: 5px center;
-        background-repeat: no-repeat;
-        background-size: 15px 15px;
-        min-width: 44px;
-        padding-left: 23px;
-        color: #f3d38a;
-      }
-
-      .league-player-card .lane-badge.has-icon.active {
-        background-color: rgba(220, 171, 64, 0.12);
-      }
-
-      .league-player-card .lane-badge.has-icon > span {
-        display: none;
-      }
-
-      .league-player-card .lane-badge.has-icon strong {
-        color: #f8fafc;
-        font-size: 0.58rem;
       }
 
       .league-player-card .form-radar {
@@ -177,19 +155,12 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260625-1"></script>
-    <script src="js/app.js?v=20260625-1"></script>
+    <script src="js/config.example.js?v=20260625-2"></script>
+    <script src="js/app.js?v=20260625-2"></script>
     <script>
       (() => {
         const RECENT_LIMIT = 20;
         const TIERS = ["iron", "bronze", "silver", "gold", "platinum", "emerald", "diamond", "master", "grandmaster", "challenger"];
-        const LANE_ICONS = {
-          top: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-top.png",
-          jungle: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-jungle.png",
-          middle: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-middle.png",
-          bottom: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-bottom.png",
-          utility: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-utility.png"
-        };
 
         function key(value) {
           return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -228,19 +199,6 @@
             img.alt = `${tier} rank emblem`;
             setRankSource(img, tier);
             node.appendChild(img);
-          });
-        }
-
-        function patchLaneIcons(card) {
-          card.querySelectorAll(".lane-badge").forEach((node) => {
-            const lane = key(node.dataset.lane || node.getAttribute("title") || node.textContent);
-            const normalized = lane === "support" ? "utility" : lane;
-            const icon = LANE_ICONS[normalized];
-            if (!icon || node.dataset.iconReady === "1") return;
-            node.classList.add("has-icon");
-            node.style.backgroundImage = `url('${icon}')`;
-            node.setAttribute("aria-label", node.getAttribute("title") || normalized);
-            node.dataset.iconReady = "1";
           });
         }
 
@@ -393,7 +351,6 @@
             const id = card.querySelector(".league-id-row h3")?.textContent.trim();
             const player = players.find((entry) => riotId(entry) === id || entry.name === id);
             patchRankIcons(card);
-            patchLaneIcons(card);
             if (!player) return;
             const matches = recentMatches(player);
             patchRecentRecord(card, matches);

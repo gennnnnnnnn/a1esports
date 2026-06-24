@@ -9,6 +9,13 @@
   const GMT7_OFFSET_MS = 7 * 60 * 60 * 1000;
   const SCHEDULE_DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const SCHEDULE_MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const LANE_ICONS = {
+    TOP: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-top.png",
+    JUNGLE: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-jungle.png",
+    MIDDLE: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-middle.png",
+    BOTTOM: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-bottom.png",
+    UTILITY: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-parties/global/default/icon-position-utility.png"
+  };
   let seasonCountdownTimer = 0;
 
   const SAMPLE_DATA = {
@@ -935,9 +942,11 @@
 
           <div class="league-extra">
             <span>Positions & Champions</span>
-            <div class="lane-champion-row">
-              <div class="lane-row">${insights.roles.map(roleBadge).join("")}</div>
-              <div class="champion-row">${insights.champions.map(championAvatar).join("")}</div>
+            <div class="profile-chip-row">
+              ${insights.roles.length ? insights.roles.map(roleBadge).join("") : profileTextChip("No role data")}
+            </div>
+            <div class="profile-chip-row champion-profile-row">
+              ${insights.champions.length ? insights.champions.map(championAvatar).join("") : profileTextChip("No champion sample")}
             </div>
           </div>
 
@@ -1156,22 +1165,26 @@
 
   function roleBadge(role) {
     const games = toNumber(role.games);
-    const total = toNumber(role.total);
-    const countText = total ? `${games}/${total}` : String(games);
+    const countText = formatNumber(games);
     return `
-      <span class="lane-badge has-count ${role.active ? "active" : ""}" data-lane="${escapeHtml(role.key)}" title="${escapeHtml(`${role.label}: ${countText}`)}">
-        <span>${escapeHtml(role.short)}</span><strong>${escapeHtml(countText)}</strong>
+      <span class="profile-icon-chip role ${role.active ? "active" : ""}" title="${escapeHtml(`${role.label}: ${countText} games`)}" aria-label="${escapeHtml(`${role.label}: ${countText} games`)}">
+        <img src="${escapeHtml(roleIcon(role.key))}" alt="${escapeHtml(role.label)}">
+        <strong>${escapeHtml(countText)}</strong>
       </span>
     `;
   }
 
   function championAvatar(champion) {
     return `
-      <span class="champion-avatar" title="${escapeHtml(`${champion.name}: ${formatNumber(champion.games)} games`)}">
+      <span class="profile-icon-chip champion" title="${escapeHtml(`${champion.name}: ${formatNumber(champion.games)} games`)}" aria-label="${escapeHtml(`${champion.name}: ${formatNumber(champion.games)} games`)}">
         <img src="${escapeHtml(championIcon(champion.name))}" alt="${escapeHtml(champion.name)}">
         <strong>${escapeHtml(formatNumber(champion.games))}</strong>
       </span>
     `;
+  }
+
+  function profileTextChip(label) {
+    return `<span class="profile-chip muted">${escapeHtml(label)}</span>`;
   }
 
   function playerInsights(playerName) {
@@ -1196,10 +1209,8 @@
     const topRoles = [...roleCounts.entries()].sort((a, b) => b[1] - a[1]);
     const roles = topRoles.map(([role, games]) => ({
       key: role,
-      short: roleShort(role),
       label: roleLabel(role),
       games,
-      total: matches.length,
       active: topRoles.slice(0, 2).some(([topRole]) => topRole === role)
     }));
 
@@ -1221,16 +1232,6 @@
     return "";
   }
 
-  function roleShort(role) {
-    return {
-      TOP: "TOP",
-      JUNGLE: "JG",
-      MIDDLE: "MID",
-      BOTTOM: "BOT",
-      UTILITY: "SUP"
-    }[role] || role;
-  }
-
   function roleLabel(role) {
     return {
       TOP: "Top",
@@ -1239,6 +1240,10 @@
       BOTTOM: "Bottom",
       UTILITY: "Support"
     }[role] || role;
+  }
+
+  function roleIcon(role) {
+    return LANE_ICONS[role] || LANE_ICONS.UTILITY;
   }
 
   function rankClass(tier) {
