@@ -942,11 +942,13 @@
 
           <div class="league-extra">
             <span>Positions & Champions</span>
-            <div class="profile-chip-row">
-              ${insights.roles.length ? insights.roles.map(roleBadge).join("") : profileTextChip("No role data")}
-            </div>
-            <div class="profile-chip-row champion-profile-row">
-              ${insights.champions.length ? insights.champions.map(championAvatar).join("") : profileTextChip("No champion sample")}
+            <div class="profile-split-row">
+              <div class="profile-chip-row profile-role-row">
+                ${insights.roles.length ? insights.roles.map(roleBadge).join("") : profileTextChip("No role data")}
+              </div>
+              <div class="profile-chip-row champion-profile-row">
+                ${insights.champions.length ? insights.champions.map(championAvatar).join("") : profileTextChip("No champion sample")}
+              </div>
             </div>
           </div>
 

@@ -689,15 +689,28 @@ h3 {
   text-transform: uppercase;
 }
 
+.profile-split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+
 .profile-chip-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  min-width: 0;
   gap: 7px;
 }
 
-.profile-chip-row + .profile-chip-row {
-  margin-top: 8px;
+.profile-role-row {
+  flex: 0 1 auto;
+}
+
+.champion-profile-row {
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 
 .profile-chip,
@@ -1465,6 +1478,15 @@ h3 {
 
   .site-footer {
     flex-direction: column;
+  }
+
+  .profile-split-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .champion-profile-row {
+    justify-content: flex-start;
   }
 }
 
