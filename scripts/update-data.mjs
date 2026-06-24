@@ -10,6 +10,7 @@ const HISTORICAL_MATCH_COUNT_PER_QUEUE = Number(process.env.HISTORICAL_MATCH_COU
 const ENRICH_MISSING_MATCH_LIMIT = Number(process.env.ENRICH_MISSING_MATCH_LIMIT || 160);
 const HISTORICAL_BACKFILL = process.env.HISTORICAL_BACKFILL !== "false";
 const RECENT_MATCH_LIMIT = Number(process.env.RECENT_MATCH_LIMIT || 20);
+const RIOT_REQUEST_DELAY_MS = Number(process.env.RIOT_REQUEST_DELAY_MS || 1250);
 const RANKED_QUEUES = [420, 440];
 const MATCH_STAT_VERSION = 2;
 const OUTPUT_PATH = path.resolve("data/rift-lab.json");
@@ -30,6 +31,7 @@ const TRACKED_PLAYERS = [
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
 const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
 let enrichMissingRemaining = ENRICH_MISSING_MATCH_LIMIT;
+let nextRiotRequestAt = 0;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -501,6 +503,8 @@ function makeMatchNote(part, durationMin, cs) {
 }
 
 async function riotFetch(url, attempt = 1) {
+  await paceRiotRequest();
+
   const response = await fetch(url, {
     headers: {
       Accept: "application/json",
@@ -521,6 +525,13 @@ async function riotFetch(url, attempt = 1) {
   }
 
   throw new Error(`Riot API error ${response.status}: ${body.slice(0, 500)}`);
+}
+
+async function paceRiotRequest() {
+  const now = Date.now();
+  const waitMs = nextRiotRequestAt - now;
+  if (waitMs > 0) await sleep(waitMs);
+  nextRiotRequestAt = Date.now() + RIOT_REQUEST_DELAY_MS;
 }
 
 async function loadSampleData() {

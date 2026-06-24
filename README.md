@@ -50,7 +50,7 @@ After the workflow finishes, the site is served from:
 https://gennnnnnnnn.github.io/a1esports/
 ```
 
-The workflow also runs every 6 hours.
+The workflow also runs every 3 hours.
 
 ## Local Commands
 

@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="rift-lab-api" content="">
-    <title>Coach | Rift Lab</title>
+    <title>Analysis | Rift Lab</title>
     <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
-    <link rel="stylesheet" href="css/style.css?v=20260618-2">
+    <link rel="stylesheet" href="css/style.css?v=20260625-1">
     <style>
       .notes-grid.coach-deep-list {
         grid-template-columns: 1fr;
@@ -394,8 +394,9 @@
       <nav class="site-nav" aria-label="Primary">
         <a href="index.html" data-nav="home">Home</a>
         <a href="players.html" data-nav="players">Players</a>
-        <a href="coach.html" data-nav="coach">Coach</a>
+        <a href="coach.html" data-nav="coach">Analysis</a>
       </nav>
+      <div class="season-countdown" data-season-countdown>Season countdown loading</div>
       <label class="header-season-control">
         <span>Season</span>
         <select data-global-season-select>
@@ -407,10 +408,10 @@
     <main class="shell page-stack">
       <section class="page-kicker">
         <p class="eyebrow">AI notes</p>
-        <h1>Coach Board</h1>
+        <h1>Analysis Board</h1>
       </section>
 
-      <section class="toolbar" aria-label="Coach filters">
+      <section class="toolbar" aria-label="Analysis filters">
         <label class="search-field">
           <span>Search</span>
           <input type="search" data-note-search placeholder="Player, weakness, action">
@@ -431,7 +432,7 @@
         <span data-coach-count>Waiting for data</span>
       </section>
 
-      <section class="notes-grid" data-notes-list aria-label="Coach notes"></section>
+      <section class="notes-grid" data-notes-list aria-label="Analysis notes"></section>
     </main>
 
     <footer class="site-footer shell">
@@ -439,8 +440,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260618-2"></script>
-    <script src="js/app.js?v=20260618-2"></script>
+    <script src="js/config.example.js?v=20260625-1"></script>
+    <script src="js/app.js?v=20260625-1"></script>
     <script>
       (() => {
         const LIMIT = 20;

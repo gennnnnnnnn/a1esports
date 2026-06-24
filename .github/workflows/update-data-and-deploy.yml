@@ -3,7 +3,7 @@ name: Update Rift Lab data and deploy
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 */3 * * *"
   push:
     branches:
       - main
@@ -39,6 +39,7 @@ jobs:
           HISTORY_START_YEAR: 2022
           HISTORICAL_MATCH_COUNT_PER_QUEUE: 20
           ENRICH_MISSING_MATCH_LIMIT: 160
+          RIOT_REQUEST_DELAY_MS: 1250
           HISTORICAL_BACKFILL: ${{ github.event_name == 'schedule' && 'false' || 'true' }}
         run: npm run update:data
 

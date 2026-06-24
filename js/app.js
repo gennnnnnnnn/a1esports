@@ -3,12 +3,13 @@
 
   const STORAGE_KEY = "riftLabDataUrl";
   const SEASON_STORAGE_KEY = "riftLabSeasonKey";
-  const PLAYER_QUEUE = { value: "all" };
   const MATCH_FILTERS = { queue: "all", champion: "", player: "all" };
   const NOTE_FILTERS = { search: "" };
   const DATA_DRAGON_VERSION = "14.24.1";
+  const GMT7_OFFSET_MS = 7 * 60 * 60 * 1000;
   const SCHEDULE_DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const SCHEDULE_MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  let seasonCountdownTimer = 0;
 
   const SAMPLE_DATA = {
     updatedAt: "2026-05-23T09:00:00.000Z",
@@ -298,6 +299,7 @@
     window.RIFT_LAB_GET_ACTIVE_MATCHES = () => activeSeasonMatches(window.RIFT_LAB_DATA || payload);
     setupSeasonControls(payload);
     renderShared(payload);
+    setupSeasonCountdown(payload);
     renderCurrentPage(payload);
     renderMatchPlayerFilter(payload);
     bindPageControls(payload);
@@ -594,6 +596,7 @@
   }
 
   function dispatchSeasonChange(data) {
+    renderSeasonCountdown(data);
     window.dispatchEvent(new CustomEvent("rift-lab-season-change", {
       detail: {
         season: activeSeason(data),
@@ -611,6 +614,47 @@
     const season = activeSeason(data);
     if (!season) return data.matches || [];
     return matchesForSeason(data.matches || [], season);
+  }
+
+  function setupSeasonCountdown(data) {
+    if (seasonCountdownTimer || !document.querySelector("[data-season-countdown]")) return;
+    seasonCountdownTimer = window.setInterval(() => renderSeasonCountdown(window.RIFT_LAB_DATA || data), 1000);
+  }
+
+  function renderSeasonCountdown(data) {
+    const nodes = document.querySelectorAll("[data-season-countdown]");
+    if (!nodes.length) return;
+
+    const season = activeSeason(data || {});
+    const end = seasonEndGmt7(season);
+    const remaining = end ? end.getTime() - Date.now() : 0;
+    const text = remaining > 0 ? countdownText(remaining) : "Season ended";
+    const title = end ? `Ends ${formatGmt7DateTime(end, { includeYear: true })}` : "Season end unavailable";
+
+    nodes.forEach((node) => {
+      node.innerHTML = `<span>Season end GMT+7</span><strong>${escapeHtml(text)}</strong>`;
+      node.title = title;
+    });
+  }
+
+  function seasonEndGmt7(season) {
+    if (!season || !season.key) return null;
+    const match = String(season.key).match(/^(\d+)-S([123])$/);
+    if (!match) return null;
+    const year = Number(match[1]);
+    const block = Number(match[2]);
+    const nextStartMonth = block === 1 ? 4 : block === 2 ? 8 : 12;
+    return new Date(Date.UTC(year, nextStartMonth, 1) - GMT7_OFFSET_MS - 1000);
+  }
+
+  function countdownText(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
   }
 
   function seasonsFromMatches(matches, source = {}) {
@@ -672,8 +716,10 @@
 
   function renderShared(data) {
     document.querySelectorAll("[data-updated-at]").forEach((node) => {
-      node.textContent = `Updated ${formatDateTime(data.updatedAt)}`;
+      node.textContent = `Last updated ${formatGmt7DateTime(data.updatedAt)}`;
     });
+
+    renderSeasonCountdown(data);
 
     const soloNode = document.querySelector('[data-field="highest-solo"]');
     const flexNode = document.querySelector('[data-field="highest-flex"]');
@@ -716,7 +762,7 @@
     if (!node) return;
 
     node.innerHTML = data.players.length
-      ? data.players.map((player) => playerCard(player, PLAYER_QUEUE.value)).join("")
+      ? data.players.map((player) => playerCard(player, "all")).join("")
       : emptyState("No players yet", "The backend has not returned active tracked players.");
   }
 
@@ -752,16 +798,6 @@
   }
 
   function bindPageControls(data) {
-    document.querySelectorAll("[data-player-queue]").forEach((button) => {
-      button.addEventListener("click", () => {
-        PLAYER_QUEUE.value = button.dataset.playerQueue;
-        document.querySelectorAll("[data-player-queue]").forEach((node) => {
-          node.classList.toggle("is-active", node === button);
-        });
-        renderPlayers(data);
-      });
-    });
-
     document.querySelectorAll("[data-match-queue]").forEach((button) => {
       button.addEventListener("click", () => {
         MATCH_FILTERS.queue = button.dataset.matchQueue;
@@ -1119,17 +1155,21 @@
   }
 
   function roleBadge(role) {
+    const games = toNumber(role.games);
+    const total = toNumber(role.total);
+    const countText = total ? `${games}/${total}` : String(games);
     return `
-      <span class="lane-badge ${role.active ? "active" : ""}" title="${escapeHtml(role.label)}">
-        ${escapeHtml(role.short)}
+      <span class="lane-badge has-count ${role.active ? "active" : ""}" data-lane="${escapeHtml(role.key)}" title="${escapeHtml(`${role.label}: ${countText}`)}">
+        <span>${escapeHtml(role.short)}</span><strong>${escapeHtml(countText)}</strong>
       </span>
     `;
   }
 
   function championAvatar(champion) {
     return `
-      <span class="champion-avatar" title="${escapeHtml(champion.name)}">
+      <span class="champion-avatar" title="${escapeHtml(`${champion.name}: ${formatNumber(champion.games)} games`)}">
         <img src="${escapeHtml(championIcon(champion.name))}" alt="${escapeHtml(champion.name)}">
+        <strong>${escapeHtml(formatNumber(champion.games))}</strong>
       </span>
     `;
   }
@@ -1153,12 +1193,14 @@
       }
     });
 
-    const topRoles = [...roleCounts.entries()].sort((a, b) => b[1] - a[1]).map(([role]) => role);
-    const roles = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"].map((role) => ({
+    const topRoles = [...roleCounts.entries()].sort((a, b) => b[1] - a[1]);
+    const roles = topRoles.map(([role, games]) => ({
       key: role,
       short: roleShort(role),
       label: roleLabel(role),
-      active: topRoles.slice(0, 2).includes(role)
+      games,
+      total: matches.length,
+      active: topRoles.slice(0, 2).some(([topRole]) => topRole === role)
     }));
 
     const champions = [...championCounts.entries()]
@@ -1540,19 +1582,22 @@
     }).format(date);
   }
 
-  function formatGmt7DateTime(value) {
+  function formatGmt7DateTime(value, options = {}) {
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "No match";
-    const parts = new Intl.DateTimeFormat("en-US", {
+    if (Number.isNaN(date.getTime())) return "Unknown GMT+7";
+    const formatOptions = {
       timeZone: "Asia/Bangkok",
       month: "short",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false
-    }).formatToParts(date);
+    };
+    if (options.includeYear) formatOptions.year = "numeric";
+    const parts = new Intl.DateTimeFormat("en-US", formatOptions).formatToParts(date);
     const get = (type) => parts.find((part) => part.type === type)?.value || "";
-    return `${get("month")} ${get("day")} ${get("hour")}:${get("minute")} GMT+7`;
+    const year = options.includeYear ? `, ${get("year")}` : "";
+    return `${get("month")} ${get("day")}${year} ${get("hour")}:${get("minute")} GMT+7`;
   }
 
   function publicPlayerLabel(playerName) {

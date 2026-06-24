@@ -136,6 +136,32 @@ button {
   color: var(--text);
 }
 
+.season-countdown {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 46px;
+  min-width: 178px;
+  padding: 7px 11px;
+  border: 1px solid rgba(242, 193, 91, 0.34);
+  border-radius: var(--radius);
+  background: rgba(18, 22, 32, 0.72);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.season-countdown strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 0.86rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .header-season-control {
   display: inline-flex;
   align-items: center;
@@ -684,8 +710,9 @@ h3 {
 
 .lane-badge {
   display: inline-grid;
-  width: 24px;
+  min-width: 24px;
   height: 24px;
+  padding: 0 4px;
   place-items: center;
   border: 1px solid #474d55;
   border-radius: 3px;
@@ -695,17 +722,30 @@ h3 {
   font-weight: 950;
 }
 
+.lane-badge.has-count {
+  grid-auto-flow: column;
+  grid-template-columns: auto auto;
+  gap: 4px;
+}
+
+.lane-badge strong {
+  color: #f8fafc;
+  font-size: 0.55rem;
+  line-height: 1;
+}
+
 .lane-badge.active {
   border-color: rgba(220, 171, 64, 0.75);
   color: #f3d38a;
 }
 
 .champion-avatar {
-  display: inline-grid;
-  width: 27px;
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  min-width: 27px;
   height: 27px;
   overflow: hidden;
-  place-items: center;
   border: 1px solid #8c6d2b;
   border-radius: 3px;
   background: #22252a;
@@ -713,10 +753,19 @@ h3 {
 
 .champion-avatar img {
   display: block;
-  width: 100%;
+  width: 27px;
   height: 100%;
   object-fit: cover;
   object-position: center;
+}
+
+.champion-avatar strong {
+  min-width: 18px;
+  padding: 0 5px;
+  color: #f8fafc;
+  font-size: 0.66rem;
+  font-weight: 950;
+  text-align: center;
 }
 
 .player-schedule {
@@ -1325,6 +1374,10 @@ h3 {
   }
 
   .header-season-control {
+    width: 100%;
+  }
+
+  .season-countdown {
     width: 100%;
   }
 
