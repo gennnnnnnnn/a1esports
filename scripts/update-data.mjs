@@ -64,9 +64,23 @@ async function buildRiftLabData() {
 
   for (const tracked of TRACKED_PLAYERS) {
     console.log(`Refreshing ${tracked.name} (${tracked.riotName}#${tracked.tag})`);
-    const account = await riotFetch(
-      `https://${ACCOUNT_REGION}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${enc(tracked.riotName)}/${enc(tracked.tag)}`
-    );
+    let account;
+    try {
+      account = await riotFetch(
+        `https://${ACCOUNT_REGION}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${enc(tracked.riotName)}/${enc(tracked.tag)}`
+      );
+    } catch (error) {
+      if (!isRiotNotFound(error)) throw error;
+
+      const fallback = existingPlayerSnapshot(existingData, tracked);
+      if (fallback) {
+        console.warn(`${tracked.name}: Riot ID not found; retaining last deployed player snapshot.`);
+        players.push(fallback);
+      } else {
+        console.warn(`${tracked.name}: Riot ID not found and no deployed snapshot exists; skipping player.`);
+      }
+      continue;
+    }
 
     const player = await buildPlayer(tracked, account.puuid);
     players.push(player);
@@ -113,6 +127,25 @@ async function buildRiftLabData() {
       worstSolo: worstSoloText(players)
     }
   };
+}
+
+function existingPlayerSnapshot(existingData, tracked) {
+  const players = Array.isArray(existingData.players) ? existingData.players : [];
+  const target = normalizePlayerKey(tracked.name);
+  const targetRiotId = normalizePlayerKey(`${tracked.riotName}#${tracked.tag}`);
+  const fallback = players.find((player) => {
+    return normalizePlayerKey(player.name) === target
+      || normalizePlayerKey(`${player.riotName || ""}#${player.tag || ""}`) === targetRiotId;
+  });
+  return fallback ? { ...fallback, name: tracked.name, riotName: tracked.riotName, tag: tracked.tag } : null;
+}
+
+function normalizePlayerKey(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function isRiotNotFound(error) {
+  return String(error?.message || "").includes("Riot API error 404");
 }
 
 async function buildPlayer(tracked, puuid) {
