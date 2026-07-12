@@ -759,8 +759,9 @@
     }
 
     if (playersNode) {
-      playersNode.innerHTML = data.players.length
-        ? data.players.slice(0, 4).map((player) => playerCard(player, "all")).join("")
+      const players = sortedPlayersByHighestRank(data.players);
+      playersNode.innerHTML = players.length
+        ? players.slice(0, 4).map((player) => playerCard(player, "all")).join("")
         : emptyState("No players yet", "The Players tab will fill after the backend publishes roster data.");
     }
 
@@ -775,9 +776,27 @@
     const node = document.querySelector("[data-players-list]");
     if (!node) return;
 
-    node.innerHTML = data.players.length
-      ? data.players.map((player) => playerCard(player, "all")).join("")
+    const players = sortedPlayersByHighestRank(data.players);
+    node.innerHTML = players.length
+      ? players.map((player) => playerCard(player, "all")).join("")
       : emptyState("No players yet", "The backend has not returned active tracked players.");
+  }
+
+  function sortedPlayersByHighestRank(players) {
+    return [...(players || [])].sort((a, b) => {
+      const aScores = playerRankScores(a);
+      const bScores = playerRankScores(b);
+      return bScores[0] - aScores[0]
+        || bScores[1] - aScores[1]
+        || riotId(a).localeCompare(riotId(b));
+    });
+  }
+
+  function playerRankScores(player) {
+    return [
+      rankScore(player.soloTier, player.soloRank, player.soloLp),
+      rankScore(player.flexTier, player.flexRank, player.flexLp)
+    ].sort((a, b) => b - a);
   }
 
   function renderNotes(data) {
@@ -1517,7 +1536,7 @@
   function rankScore(tier, division, lp) {
     const tierScore = RANK_TIERS[String(tier || "").toUpperCase()] || 0;
     const divisionScore = DIVISIONS[String(division || "").toUpperCase()] || 0;
-    return tierScore * 400 + divisionScore * 100 + (toNumber(lp) || 0);
+    return tierScore * 10000 + divisionScore * 1000 + (toNumber(lp) || 0);
   }
 
   function rankText(tier, rank, lp) {

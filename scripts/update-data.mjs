@@ -690,8 +690,8 @@ function rankScore(player, mode) {
     CHALLENGER: 10
   };
   const divisionMap = { IV: 1, III: 2, II: 3, I: 4 };
-  return (tierMap[String(player[`${mode}Tier`]).toUpperCase()] || 0) * 400 +
-    (divisionMap[String(player[`${mode}Rank`]).toUpperCase()] || 0) * 100 +
+  return (tierMap[String(player[`${mode}Tier`]).toUpperCase()] || 0) * 10000 +
+    (divisionMap[String(player[`${mode}Rank`]).toUpperCase()] || 0) * 1000 +
     (Number(player[`${mode}Lp`]) || 0);
 }
 
