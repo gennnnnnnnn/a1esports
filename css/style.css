@@ -504,6 +504,10 @@ h3 {
 }
 
 .league-id-row p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   margin: 4px 0 0;
   color: #d7dbe2;
   font-size: 0.86rem;
@@ -513,6 +517,18 @@ h3 {
 .league-id-row p span {
   color: #a3aab5;
   font-weight: 700;
+}
+
+.league-id-row .rename-activity {
+  min-height: 20px;
+  padding: 2px 6px;
+  border: 1px solid rgba(242, 193, 91, 0.38);
+  border-radius: 4px;
+  background: rgba(242, 193, 91, 0.08);
+  color: #f2c15b;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .sync-stamp {

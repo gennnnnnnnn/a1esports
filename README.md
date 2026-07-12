@@ -50,7 +50,7 @@ After the workflow finishes, the site is served from:
 https://gennnnnnnnn.github.io/a1esports/
 ```
 
-The workflow also runs every 3 hours. Pushes deploy code quickly by reusing the currently deployed data file; scheduled and manual runs refresh Riot data before deploying.
+The workflow also runs every 3 hours. Pushes deploy code quickly by reusing the currently deployed data file; scheduled and manual runs refresh Riot data before deploying. Add `[refresh-data]` to a commit message to force a data refresh on that push.
 
 ## Local Commands
 
@@ -86,11 +86,14 @@ $env:RIOT_API_KEY="RGAPI-your-key"; npm run update:data
   source,
   players: [
     {
-      name, riotName, tag, level, puuid,
+      name, riotName, tag, level, puuid, nameHistory,
       soloTier, soloRank, soloLp, soloWins, soloLosses, soloWr,
       flexTier, flexRank, flexLp, flexWins, flexLosses, flexWr,
       notes
     }
+  ],
+  nameChanges: [
+    { player, puuid, from, to, detectedAt }
   ],
   summaryRows: [
     { player, games, wins, losses, winRate }
@@ -98,7 +101,9 @@ $env:RIOT_API_KEY="RGAPI-your-key"; npm run update:data
   latestNotes: [
     { date, player, scope, summary, strengths, weaknesses, actions }
   ],
-  matches: [],
+  matches: [
+    { matchId, player, playerPuuid, riotId, ...matchStats }
+  ],
   metrics: {
     trackedPlayers,
     importedMatches,

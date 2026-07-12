@@ -18,14 +18,14 @@ const EXISTING_DATA_URL = process.env.EXISTING_DATA_URL || "https://gennnnnnnnn.
 const USE_SAMPLE = process.argv.includes("--sample");
 
 const TRACKED_PLAYERS = [
-  { name: "Road to the Top#A1E", riotName: "Road to the Top", tag: "A1E" },
-  { name: "Vua B\u1ecbp Gia Lai#7777", riotName: "Vua B\u1ecbp Gia Lai", tag: "7777" },
-  { name: "Tian laoshi#2252", riotName: "Tian laoshi", tag: "2252" },
-  { name: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207", riotName: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng", tag: "1207" },
-  { name: "HoangLiuMu#2252", riotName: "HoangLiuMu", tag: "2252" },
-  { name: "25 Tu\u1ed5i L\u1ea5y V\u1ee3#1207", riotName: "25 Tu\u1ed5i L\u1ea5y V\u1ee3", tag: "1207" },
-  { name: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3#skepy", riotName: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3", tag: "skepy" },
-  { name: "\u0110\u00e9o ch\u01a1i Aram#6887", riotName: "\u0110\u00e9o ch\u01a1i Aram", tag: "6887" }
+  { name: "Road to the Top#A1E", riotName: "Road to the Top", tag: "A1E", puuid: "1Eg1doQnS4_-9SmgjzXlgX4287ZTxPuGTRJandjanA_MaL2jKmfN5JKJLt3PEQyfnp5JonNCzFq6XA" },
+  { name: "Vua B\u1ecbp Gia Lai#7777", riotName: "Vua B\u1ecbp Gia Lai", tag: "7777", puuid: "quikm4KaBZslNiaBHq5dZ78Jt6RTgxk5srZvREz2vYFT3pWXwMrRx_EojcPOS9Qt-mObXuh_ghwZig" },
+  { name: "Tian laoshi#2252", riotName: "Tian laoshi", tag: "2252", puuid: "Qq7Z3u41ld_Ky3HhUi_6qinnzfbZWHGyNDlr-nxBZuXrQ3eRSKQAh1GFt4Ikq6bgoN0LXZR_quDOeA" },
+  { name: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng#1207", riotName: "H\u1ed1c V\u0103n Tr\u01b0\u1edfng", tag: "1207", puuid: "TQi4p1Kii4HP8iDJ8my7JUagyXA74akdQ2FJ5iZYL1oYNe-u8L8e5-SZO4fpLK1Lgj8_zcH-RALFDA" },
+  { name: "HoangLiuMu#2252", riotName: "HoangLiuMu", tag: "2252", puuid: "Bb1ueS5xG3MOjaMi7QkWYNX_AyJYH3XtEsIyBuirAMDy8mGP6yEbagyDVsztZ7l10pJpxGXhB0DbQw" },
+  { name: "25 Tu\u1ed5i L\u1ea5y V\u1ee3#1207", riotName: "25 Tu\u1ed5i L\u1ea5y V\u1ee3", tag: "1207", puuid: "Shq4Ybs0LFzGqxSLIKBCV0-ndBiYz733bAC2TnGGuO1ueLS-OqoXfHZMwIq1KxwHaTT1yX-yH6e6Eg" },
+  { name: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3#skepy", riotName: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3", tag: "skepy", puuid: "eGuPe1i0dvJoKRjEJOeNVJ7AUwNKRaO4vk0rzEHoO5QbmObQ12cxiQ8hc6hW_9xswC-bHGUQjE21Ug" },
+  { name: "\u0110\u00e9o ch\u01a1i Aram#6887", riotName: "\u0110\u00e9o ch\u01a1i Aram", tag: "6887", puuid: "cxXHRBwkAK4lrYCKZxNAfsvYSMtQDo4QF8ZLGVCUrVpIDt-Nwxrqhs5YS6FL7YkZOnZGYoeDCX8afg" }
 ];
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
@@ -63,27 +63,34 @@ async function buildRiftLabData() {
   }
 
   for (const tracked of TRACKED_PLAYERS) {
-    console.log(`Refreshing ${tracked.name} (${tracked.riotName}#${tracked.tag})`);
+    const existingPlayer = existingPlayerSnapshot(existingData, tracked);
+    console.log(`Refreshing ${tracked.name} by PUUID`);
     let account;
     try {
-      account = await riotFetch(
-        `https://${ACCOUNT_REGION}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${enc(tracked.riotName)}/${enc(tracked.tag)}`
-      );
+      account = await resolveTrackedAccount(tracked, existingPlayer);
     } catch (error) {
       if (!isRiotNotFound(error)) throw error;
 
-      const fallback = existingPlayerSnapshot(existingData, tracked);
-      if (fallback) {
-        console.warn(`${tracked.name}: Riot ID not found; retaining last deployed player snapshot.`);
-        players.push(fallback);
+      if (existingPlayer) {
+        console.warn(`${tracked.name}: account not found by PUUID; retaining last deployed player snapshot.`);
+        players.push(existingPlayer);
+        refreshExistingMatchIdentity(matchesByKey, existingPlayer, existingPlayer);
       } else {
-        console.warn(`${tracked.name}: Riot ID not found and no deployed snapshot exists; skipping player.`);
+        console.warn(`${tracked.name}: account not found and no deployed snapshot exists; skipping player.`);
       }
       continue;
     }
 
-    const player = await buildPlayer(tracked, account.puuid);
+    const resolvedTracked = {
+      ...tracked,
+      riotName: account.gameName || tracked.riotName,
+      tag: account.tagLine || tracked.tag,
+      puuid: account.puuid || tracked.puuid || existingPlayer?.puuid || ""
+    };
+    const nameHistory = updatedNameHistory(existingPlayer, resolvedTracked);
+    const player = await buildPlayer(resolvedTracked, resolvedTracked.puuid, nameHistory);
     players.push(player);
+    refreshExistingMatchIdentity(matchesByKey, player, existingPlayer);
 
     const playerMatches = await fetchPlayerMatches(player, matchDetailCache, matchesByKey);
     mergeMatches(matchesByKey, playerMatches);
@@ -115,6 +122,7 @@ async function buildRiftLabData() {
       matchStatVersion: MATCH_STAT_VERSION
     },
     players,
+    nameChanges: buildNameChanges(players),
     summaryRows,
     latestNotes,
     matches,
@@ -129,31 +137,103 @@ async function buildRiftLabData() {
   };
 }
 
+async function resolveTrackedAccount(tracked, existingPlayer) {
+  const puuid = tracked.puuid || existingPlayer?.puuid || "";
+  if (puuid) {
+    return riotFetch(`https://${ACCOUNT_REGION}.api.riotgames.com/riot/account/v1/accounts/by-puuid/${enc(puuid)}`);
+  }
+  return riotFetch(
+    `https://${ACCOUNT_REGION}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${enc(tracked.riotName)}/${enc(tracked.tag)}`
+  );
+}
+
 function existingPlayerSnapshot(existingData, tracked) {
   const players = Array.isArray(existingData.players) ? existingData.players : [];
   const target = normalizePlayerKey(tracked.name);
   const targetRiotId = normalizePlayerKey(`${tracked.riotName}#${tracked.tag}`);
   const fallback = players.find((player) => {
-    return normalizePlayerKey(player.name) === target
+    return (tracked.puuid && player.puuid === tracked.puuid)
+      || normalizePlayerKey(player.name) === target
       || normalizePlayerKey(`${player.riotName || ""}#${player.tag || ""}`) === targetRiotId;
   });
-  return fallback ? { ...fallback, name: tracked.name, riotName: tracked.riotName, tag: tracked.tag } : null;
+  return fallback ? { ...fallback, name: tracked.name, puuid: tracked.puuid || fallback.puuid || "" } : null;
+}
+
+function updatedNameHistory(existingPlayer, tracked) {
+  const history = Array.isArray(existingPlayer?.nameHistory) ? [...existingPlayer.nameHistory] : [];
+  const previous = playerRiotId(existingPlayer);
+  const current = playerRiotId(tracked);
+  if (previous && current && normalizePlayerKey(previous) !== normalizePlayerKey(current)) {
+    const latest = history[history.length - 1];
+    if (!latest || normalizePlayerKey(latest.from) !== normalizePlayerKey(previous)
+      || normalizePlayerKey(latest.to) !== normalizePlayerKey(current)) {
+      history.push({ from: previous, to: current, detectedAt: new Date().toISOString() });
+      console.log(`Detected Riot ID change: ${previous} -> ${current}`);
+    }
+  }
+  return history.slice(-20);
+}
+
+function refreshExistingMatchIdentity(matchesByKey, player, existingPlayer) {
+  const aliases = new Set([
+    player.name,
+    existingPlayer?.name,
+    playerRiotId(player),
+    playerRiotId(existingPlayer),
+    ...(player.nameHistory || []).flatMap((change) => [change.from, change.to])
+  ].filter(Boolean).map(normalizePlayerKey));
+
+  for (const [key, match] of [...matchesByKey.entries()]) {
+    const belongsToPlayer = match.playerPuuid === player.puuid
+      || aliases.has(normalizePlayerKey(match.player))
+      || aliases.has(normalizePlayerKey(match.riotId));
+    if (!belongsToPlayer) continue;
+
+    matchesByKey.delete(key);
+    const updated = {
+      ...match,
+      player: player.name,
+      playerPuuid: player.puuid,
+      riotId: playerRiotId(player)
+    };
+    matchesByKey.set(matchRowKey(updated), updated);
+  }
+}
+
+function buildNameChanges(players) {
+  return players
+    .flatMap((player) => (player.nameHistory || []).map((change) => ({
+      player: player.name,
+      puuid: player.puuid,
+      ...change
+    })))
+    .sort((a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime());
+}
+
+function playerRiotId(player) {
+  if (!player?.riotName || !player?.tag) return "";
+  return `${player.riotName}#${player.tag}`;
 }
 
 function normalizePlayerKey(value) {
-  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return String(value || "")
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .replace(/\s+/g, " ");
 }
 
 function isRiotNotFound(error) {
   return String(error?.message || "").includes("Riot API error 404");
 }
 
-async function buildPlayer(tracked, puuid) {
+async function buildPlayer(tracked, puuid, nameHistory = []) {
   const player = {
     name: tracked.name,
     riotName: tracked.riotName,
     tag: tracked.tag,
     puuid,
+    nameHistory,
     level: 0,
     soloTier: "UNRANKED",
     soloRank: "",
@@ -348,6 +428,7 @@ function toMatchRow(player, match, part) {
     queueLabel: queueLabel(match.info.queueId),
     durationMin: round(durationMin),
     player: player.name,
+    playerPuuid: player.puuid,
     riotId: `${player.riotName}#${player.tag}`,
     champion: part.championName || "Unknown",
     role: part.teamPosition || part.lane || "",

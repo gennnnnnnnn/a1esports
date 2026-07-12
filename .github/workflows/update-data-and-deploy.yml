@@ -29,24 +29,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node
-        if: github.event_name != 'push'
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[refresh-data]')
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Generate Riot data
-        if: github.event_name != 'push'
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[refresh-data]')
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           HISTORY_START_YEAR: 2022
           HISTORICAL_MATCH_COUNT_PER_QUEUE: 20
           ENRICH_MISSING_MATCH_LIMIT: 160
           RIOT_REQUEST_DELAY_MS: 1250
-          HISTORICAL_BACKFILL: ${{ github.event_name == 'schedule' && 'false' || 'true' }}
+          HISTORICAL_BACKFILL: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
         run: npm run update:data
 
       - name: Reuse deployed data for code push
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[refresh-data]')
         run: |
           mkdir -p data
           curl --fail --location --retry 3 --retry-delay 2 \

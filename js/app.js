@@ -431,6 +431,12 @@
       name: text(read(player, ["name", "player", "Display Name"])) || "Unknown",
       riotName: text(read(player, ["riotName", "Riot Game Name", "gameName"])) || "",
       tag: text(read(player, ["tag", "tagline", "Tagline"])) || "",
+      puuid: text(read(player, ["puuid", "PUUID"])),
+      nameHistory: asArray(read(player, ["nameHistory", "Name History"])).map((change) => ({
+        from: text(read(change, ["from", "From"])),
+        to: text(read(change, ["to", "To"])),
+        detectedAt: read(change, ["detectedAt", "Detected At"]) || ""
+      })).filter((change) => change.from && change.to),
       level: toNumber(read(player, ["level", "Summoner Level"])),
       soloTier: text(read(player, ["soloTier", "Solo Tier"])),
       soloRank: text(read(player, ["soloRank", "Solo Rank"])),
@@ -487,6 +493,7 @@
       queueLabel: text(read(match, ["queueLabel", "Queue Label"])) || queueLabel(queueId),
       durationMin: toNumber(read(match, ["durationMin", "Duration min"])),
       player: text(read(match, ["player", "Player"])) || "Unknown",
+      playerPuuid: text(read(match, ["playerPuuid", "Player PUUID"])),
       riotId: text(read(match, ["riotId", "Riot ID"])),
       champion: text(read(match, ["champion", "Champion"])) || "Unknown",
       role: text(read(match, ["role", "Role", "teamPosition", "Team Position"])),
@@ -910,6 +917,7 @@
     const summary = playerSummary(player.name);
     const insights = playerInsights(player.name);
     const lastSeen = playerLastSeen(player.name);
+    const latestNameChange = player.nameHistory?.[player.nameHistory.length - 1] || null;
 
     return `
       <article class="player-card league-player-card">
@@ -923,7 +931,10 @@
           <div class="league-id-row">
             <div>
               <h3>${escapeHtml(riotId(player))}</h3>
-              <p><span>VN2</span></p>
+              <p>
+                <span>VN2</span>
+                ${latestNameChange ? nameChangeBadge(latestNameChange) : ""}
+              </p>
             </div>
             <div class="sync-stamp">
               <time datetime="${escapeHtml(lastSeen.iso)}" title="${escapeHtml(lastSeen.title)}">${escapeHtml(lastSeen.label)}</time>
@@ -956,6 +967,11 @@
         </div>
       </article>
     `;
+  }
+
+  function nameChangeBadge(change) {
+    const title = `${change.from} -> ${change.to}`;
+    return `<span class="rename-activity" title="${escapeHtml(title)}">Renamed ${escapeHtml(formatDate(change.detectedAt))}</span>`;
   }
 
   function playerSchedule(playerName) {
