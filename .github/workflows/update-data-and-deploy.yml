@@ -3,7 +3,7 @@ name: Update Rift Lab data and deploy
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */3 * * *"
+    - cron: "2-57/5 * * * *"
   push:
     branches:
       - main
