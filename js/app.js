@@ -1152,6 +1152,13 @@
   }
 
   function scheduleSeasonBoundaries(year) {
+    if (year === 2026) {
+      return [
+        new Date(Date.UTC(2026, 3, 29)),
+        new Date(Date.UTC(2026, 6, 29))
+      ];
+    }
+
     return [
       new Date(Date.UTC(year, 4, 1)),
       new Date(Date.UTC(year, 8, 1))
@@ -1165,7 +1172,7 @@
         return boundary >= week && boundary < weekEnd;
       });
       if (weekIndex < 0) return "";
-      return `<span class="schedule-season-separator" style="--week-index: ${weekIndex}" title="${escapeAttr(`${SCHEDULE_MONTH_LABELS[boundary.getUTCMonth()]} starts Season ${index + 2}`)}"></span>`;
+      return `<span class="schedule-season-separator" style="--week-index: ${weekIndex}" title="${escapeAttr(`${formatScheduleDate(boundary)} starts Season ${index + 2}`)}"></span>`;
     }).join("");
   }
 
