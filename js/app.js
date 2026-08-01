@@ -359,7 +359,8 @@
     }
 
     try {
-      const response = await fetch(apiUrl, {
+      const separator = apiUrl.includes("?") ? "&" : "?";
+      const response = await fetch(`${apiUrl}${separator}refresh=${Date.now()}`, {
         headers: { Accept: "application/json" },
         cache: "no-store"
       });
@@ -581,8 +582,11 @@
     if (!controls.length) return;
 
     const seasons = seasonsFromMatches(data.matches, data.source);
-    const stored = storageGet(SEASON_STORAGE_KEY);
-    const selected = seasons.some((season) => season.key === stored) ? stored : seasons[0]?.key || "";
+    const currentSeasonKey = seasonOf(new Date()).key;
+    const stored = storedSeasonSelection(currentSeasonKey);
+    const selected = seasons.some((season) => season.key === stored)
+      ? stored
+      : seasons.find((season) => season.key === currentSeasonKey)?.key || seasons[0]?.key || "";
     setActiveSeason(selected, seasons);
 
     controls.forEach((select) => {
@@ -592,7 +596,10 @@
       select.value = selected;
       select.addEventListener("change", () => {
         setActiveSeason(select.value, seasons);
-        storageSet(SEASON_STORAGE_KEY, select.value);
+        storageSet(SEASON_STORAGE_KEY, JSON.stringify({
+          key: select.value,
+          currentSeasonKey
+        }));
         controls.forEach((other) => {
           if (other !== select) other.value = select.value;
         });
@@ -642,17 +649,35 @@
     const season = activeSeason(data || {});
     const end = seasonEndGmt7(season);
     const remaining = end ? end.getTime() - Date.now() : 0;
-    const text = remaining > 0 ? countdownText(remaining) : "Season ended";
-    const title = end ? `Ends ${formatGmt7DateTime(end, { includeYear: true })}` : "Season end unavailable";
+    const text = end ? (remaining > 0 ? countdownText(remaining) : "Season ended") : "End date TBA";
+    const label = season ? `${season.label} · GMT+7` : "Season · GMT+7";
+    const title = end
+      ? `Ends ${formatGmt7DateTime(end, { includeYear: true })}`
+      : `${season?.label || "Season"} end date has not been announced`;
 
     nodes.forEach((node) => {
-      node.innerHTML = `<span>Season end GMT+7</span><strong>${escapeHtml(text)}</strong>`;
+      node.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(text)}</strong>`;
       node.title = title;
     });
   }
 
+  function storedSeasonSelection(currentSeasonKey) {
+    const stored = storageGet(SEASON_STORAGE_KEY);
+    if (!stored) return "";
+
+    try {
+      const selection = JSON.parse(stored);
+      return selection?.currentSeasonKey === currentSeasonKey ? String(selection.key || "") : "";
+    } catch {
+      return "";
+    }
+  }
+
   function seasonEndGmt7(season) {
     if (!season || !season.key) return null;
+    if (Object.prototype.hasOwnProperty.call(season, "countdownEnd")) {
+      return season.countdownEnd ? new Date(season.countdownEnd) : null;
+    }
     const match = String(season.key).match(/^(\d+)-S([123])$/);
     if (!match) return null;
     const year = Number(match[1]);
@@ -704,6 +729,41 @@
     const date = new Date(dateLike);
     const safe = Number.isNaN(date.getTime()) ? new Date() : date;
     const year = safe.getUTCFullYear();
+    const official2026 = year === 2026 ? [
+      {
+        block: 1,
+        start: new Date(Date.UTC(2026, 0, 1)),
+        end: new Date(Date.UTC(2026, 3, 29, 5)),
+        countdownEnd: new Date(Date.UTC(2026, 3, 28, 16, 59, 59)),
+        range: "Jan 8-Apr 28"
+      },
+      {
+        block: 2,
+        start: new Date(Date.UTC(2026, 3, 29, 5)),
+        end: new Date(Date.UTC(2026, 6, 29, 5)),
+        countdownEnd: new Date(Date.UTC(2026, 6, 28, 16, 59, 59)),
+        range: "Apr 29-Jul 28"
+      },
+      {
+        block: 3,
+        start: new Date(Date.UTC(2026, 6, 29, 5)),
+        end: new Date(Date.UTC(2027, 0, 1)),
+        countdownEnd: null,
+        range: "Jul 29 onward"
+      }
+    ].find((season) => safe >= season.start && safe < season.end) : null;
+
+    if (official2026) {
+      return {
+        key: `${year}-S${official2026.block}`,
+        label: `${year} Season ${official2026.block}`,
+        range: official2026.range,
+        start: official2026.start,
+        end: official2026.end,
+        countdownEnd: official2026.countdownEnd
+      };
+    }
+
     const month = safe.getUTCMonth();
     const block = month < 4 ? 1 : month < 8 ? 2 : 3;
     const startMonth = block === 1 ? 0 : block === 2 ? 4 : 8;

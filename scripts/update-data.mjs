@@ -560,6 +560,26 @@ function matchRowKey(match) {
 }
 
 function seasonWindowsForYear(year) {
+  if (year === 2026) {
+    return [
+      {
+        label: "2026 Season 1",
+        start: new Date(Date.UTC(2026, 0, 8, 5)),
+        end: new Date(Date.UTC(2026, 3, 29, 5))
+      },
+      {
+        label: "2026 Season 2",
+        start: new Date(Date.UTC(2026, 3, 29, 5)),
+        end: new Date(Date.UTC(2026, 6, 29, 5))
+      },
+      {
+        label: "2026 Season 3",
+        start: new Date(Date.UTC(2026, 6, 29, 5)),
+        end: new Date(Date.UTC(2027, 0, 1))
+      }
+    ];
+  }
+
   return [
     {
       label: `${year} Season 1`,

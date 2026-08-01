@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="rift-lab-api" content="">
+    <meta name="rift-lab-api" content="data/rift-lab.json">
     <title>Rift Lab | A1 eSports</title>
-    <link rel="stylesheet" href="css/style.css?v=20260712-2">
+    <link rel="stylesheet" href="css/style.css?v=20260802-1">
     <style>
       .team-hero {
         grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
@@ -345,7 +345,7 @@
         <div class="hero-copy">
           <p class="eyebrow">VN2 ranked squad analytics</p>
           <h1>A1 eSports Rift Lab</h1>
-          <p class="hero-lede">Team statistics are grouped by season: Season 1 = Jan-Apr, Season 2 = May-Aug, Season 3 = Sep-Dec.</p>
+          <p class="hero-lede">Team statistics follow Riot's 2026 ranked seasons. Season 3 started July 29 at noon GMT+7.</p>
           <div class="hero-actions">
             <a class="button primary" href="coach.html">Open Analysis Board</a>
           </div>
@@ -381,8 +381,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260712-2"></script>
-    <script src="js/app.js?v=20260712-2"></script>
+    <script src="js/config.example.js?v=20260802-1"></script>
+    <script src="js/app.js?v=20260802-1"></script>
     <script>
       (() => {
         const SEASON_STORAGE_KEY = "riftLabSeasonKey";
@@ -405,7 +405,10 @@
 
         function safeStorageGet(key) {
           try {
-            return window.localStorage ? window.localStorage.getItem(key) : "";
+            const stored = window.localStorage ? window.localStorage.getItem(key) : "";
+            if (!stored) return "";
+            const selection = JSON.parse(stored);
+            return selection && typeof selection === "object" ? String(selection.key || "") : String(stored);
           } catch (error) {
             return "";
           }
@@ -447,6 +450,22 @@
           const date = new Date(dateLike);
           const safe = Number.isNaN(date.getTime()) ? new Date() : date;
           const year = safe.getUTCFullYear();
+          const official2026 = year === 2026 ? [
+            { block: 1, start: new Date(Date.UTC(2026, 0, 1)), end: new Date(Date.UTC(2026, 3, 29, 5)), range: "Jan 8-Apr 28" },
+            { block: 2, start: new Date(Date.UTC(2026, 3, 29, 5)), end: new Date(Date.UTC(2026, 6, 29, 5)), range: "Apr 29-Jul 28" },
+            { block: 3, start: new Date(Date.UTC(2026, 6, 29, 5)), end: new Date(Date.UTC(2027, 0, 1)), range: "Jul 29 onward" }
+          ].find((season) => safe >= season.start && safe < season.end) : null;
+
+          if (official2026) {
+            return {
+              key: `${year}-S${official2026.block}`,
+              label: `${year} Season ${official2026.block}`,
+              range: official2026.range,
+              start: official2026.start,
+              end: official2026.end
+            };
+          }
+
           const block = Math.floor(safe.getUTCMonth() / 4) + 1;
           const startMonth = (block - 1) * 4;
           const endMonth = startMonth + 3;
