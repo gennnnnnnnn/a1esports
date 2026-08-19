@@ -29,13 +29,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node
-        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[refresh-data]')
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[refresh-data]') || contains(github.event.head_commit.message, '[backfill-data]')
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Generate Riot data
-        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[refresh-data]')
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[refresh-data]') || contains(github.event.head_commit.message, '[backfill-data]')
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           HISTORY_START_YEAR: 2022
@@ -43,12 +43,22 @@ jobs:
           ENRICH_MISSING_MATCH_LIMIT: 160
           RIOT_REQUEST_DELAY_MS: 1250
           HISTORICAL_BACKFILL: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
-        run: |
-          npm run update:data
-          node scripts/update-lp-history.mjs
+        run: npm run update:data
+
+      - name: Backfill every ranked match in each season
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[backfill-data]'))
+        env:
+          RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+          HISTORY_START_YEAR: 2022
+          RIOT_REQUEST_DELAY_MS: 1250
+        run: node scripts/backfill-season-matches.mjs
+
+      - name: Record LP history
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[refresh-data]') || contains(github.event.head_commit.message, '[backfill-data]')
+        run: node scripts/update-lp-history.mjs
 
       - name: Reuse deployed data for code push
-        if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[refresh-data]')
+        if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[refresh-data]') && !contains(github.event.head_commit.message, '[backfill-data]')
         run: |
           mkdir -p data
           curl --fail --location --retry 3 --retry-delay 2 \
