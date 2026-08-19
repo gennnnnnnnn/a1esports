@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 const OUTPUT_PATH = new URL("../data/rift-lab.json", import.meta.url);
 const EXISTING_DATA_URL = process.env.EXISTING_DATA_URL || "https://gennnnnnnnn.github.io/a1esports/data/rift-lab.json";
 const QUEUES = [
+  { queueId: 42, mode: "team5v5", label: "Ranked Team 5v5" },
   { queueId: 420, mode: "solo", label: "Solo/Duo" },
   { queueId: 440, mode: "flex", label: "Flex" }
 ];
