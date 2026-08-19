@@ -38,7 +38,8 @@ window.RIFT_LAB_CONFIG = {
       wins: 0,
       losses: 0,
       solo: { wins: 0, losses: 0 },
-      flex: { wins: 0, losses: 0 }
+      flex: { wins: 0, losses: 0 },
+      team: { wins: 0, losses: 0 }
     };
   }
 
@@ -57,12 +58,14 @@ window.RIFT_LAB_CONFIG = {
     const byDay = new Map();
     (data.matches || []).forEach((match) => {
       if (normalizeKey(match.player) !== normalizeKey(player.name)) return;
+      const queueId = Number(match.queueId);
+      if (![42, 420, 440].includes(queueId)) return;
       const parts = gmt7Parts(match.gameStart);
       if (!parts || parts.year !== year) return;
 
       const key = dateKey(parts.year, parts.month, parts.day);
       const record = byDay.get(key) || emptyRecord();
-      const bucket = Number(match.queueId) === 420 ? record.solo : record.flex;
+      const bucket = queueId === 42 ? record.team : queueId === 420 ? record.solo : record.flex;
       if (match.result === "Win") {
         record.wins += 1;
         bucket.wins += 1;
@@ -93,7 +96,8 @@ window.RIFT_LAB_CONFIG = {
         const title = [
           `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}: ${games} games`,
           `Solo/Duo: ${record.solo.wins}W - ${record.solo.losses}L`,
-          `Flex: ${record.flex.wins}W - ${record.flex.losses}L`
+          `Flex: ${record.flex.wins}W - ${record.flex.losses}L`,
+          `Ranked Team 5v5: ${record.team.wins}W - ${record.team.losses}L`
         ].join("\n");
         if (cell.title !== title) cell.title = title;
         if (cell.getAttribute("aria-label") !== title) cell.setAttribute("aria-label", title);
@@ -124,7 +128,7 @@ window.RIFT_LAB_CONFIG = {
 
 if (document.body?.dataset.page === "players") {
   const script = document.createElement("script");
-  script.src = "js/lp-history.js?v=20260820-2";
+  script.src = "js/lp-history.js?v=20260820-3";
   script.async = false;
   document.head.appendChild(script);
 }
