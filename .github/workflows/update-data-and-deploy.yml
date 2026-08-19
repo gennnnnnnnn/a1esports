@@ -43,7 +43,9 @@ jobs:
           ENRICH_MISSING_MATCH_LIMIT: 160
           RIOT_REQUEST_DELAY_MS: 1250
           HISTORICAL_BACKFILL: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
-        run: npm run update:data
+        run: |
+          npm run update:data
+          node scripts/update-lp-history.mjs
 
       - name: Reuse deployed data for code push
         if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[refresh-data]')
