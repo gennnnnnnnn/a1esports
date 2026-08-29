@@ -27,7 +27,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ ((github.event_name == 'workflow_dispatch' && inputs.backfill) || contains(github.event.head_commit.message, '[backfill-data]')) && 'backfill' || 'refresh' }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && inputs.continue_refresh_loop) }}
 
 jobs:
   update-and-deploy:
