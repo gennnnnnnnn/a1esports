@@ -2,7 +2,7 @@
   "use strict";
 
   const QUEUES = {
-    42:  { field: "team", label: "Ranked Team 5v5", color: "#55df61" },
+    42:  { field: "team", label: "Ranked Team 5v5", color: "#4da3ff" },
     420: { field: "solo", label: "Solo/Duo", color: "#ff4d4f" },
     440: { field: "flex", label: "Flex", color: "#f2c15b" }
   };
@@ -181,17 +181,15 @@
     const height = 92;
     const left = 18;
     const right = 12;
-    const plotW = width - left - right;
-    const x = (index) => left + (rows.length <= 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
-    const markers = rows.map((row, index) => {
-      const queue = QUEUES[row.queueId];
-      return `<line x1="${x(index).toFixed(1)}" y1="42" x2="${x(index).toFixed(1)}" y2="59" stroke="${queue.color}" stroke-width="3"><title>${escapeHtml(matchTooltip(row.match))}</title></line>`;
-    }).join("");
+    const dateTicks = rows.length ? `
+      <line class="lp-date-tick" x1="${left}" y1="59" x2="${left}" y2="65"></line>
+      <line class="lp-date-tick" x1="${width - right}" y1="59" x2="${width - right}" y2="65"></line>
+    ` : "";
     const labels = rows.length ? `
       <text class="lp-x-label" x="${left}" y="80">${escapeHtml(displayDate(rows[0].date))}</text>
       <text class="lp-x-label" x="${width - right}" y="80" text-anchor="end">${escapeHtml(displayDate(rows[rows.length - 1].date))}</text>
     ` : "";
-    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Season ranked match timeline"><line class="lp-axis" x1="${left}" y1="59" x2="${width - right}" y2="59"></line>${markers}${labels}<text class="lp-empty-label" x="${width / 2}" y="22" text-anchor="middle">LP snapshots are not available for these matches yet</text></svg>`;
+    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Season ranked match timeline"><line class="lp-axis" x1="${left}" y1="59" x2="${width - right}" y2="59"></line>${dateTicks}${labels}<text class="lp-empty-label" x="${width / 2}" y="22" text-anchor="middle">LP snapshots are not available for these matches yet</text></svg>`;
   }
 
   function historySvg(matches, snapshots) {
@@ -227,13 +225,9 @@
     `).join("");
 
     const xLabels = xTickIndices.map((index) => `
+      <line class="lp-date-tick" x1="${x(index).toFixed(1)}" y1="${height - bottom}" x2="${x(index).toFixed(1)}" y2="${height - bottom + 6}"></line>
       <text class="lp-x-label" x="${x(index).toFixed(1)}" y="${height - 8}" text-anchor="middle">${escapeHtml(displayDate(rows[index].date))}</text>
     `).join("");
-
-    const matchStrip = rows.map((row, index) => {
-      const queue = QUEUES[row.queueId];
-      return `<line class="lp-match-tick" x1="${x(index).toFixed(1)}" y1="${height - bottom + 5}" x2="${x(index).toFixed(1)}" y2="${height - bottom + 15}" stroke="${queue.color}"><title>${escapeHtml(matchTooltip(row.match))}</title></line>`;
-    }).join("");
 
     const drawSeries = (field, queueId) => {
       const queue = QUEUES[queueId];
@@ -268,7 +262,6 @@
         ${drawSeries("flex", 440)}
         ${drawSeries("team", 42)}
         <line class="lp-axis" x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}"></line>
-        ${matchStrip}
         ${xLabels}
       </svg>
     `;
@@ -293,7 +286,6 @@
           </div>
         </div>
         <div class="lp-history-chart">${matches.length ? historySvg(matches, snapshots) : '<div class="lp-history-empty">No matches from these three ranked queues are stored for this season.</div>'}</div>
-        <div class="lp-history-note">Every coloured tick is one match. LP curves use recorded post-match snapshots only; missing historical LP is left missing rather than estimated.</div>
       </section>
     `;
   }
@@ -308,7 +300,7 @@
       .league-player-card .lp-history-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:4px; }
       .league-player-card .lp-history-head > div:first-child { display:grid; gap:2px; }
       .league-player-card .lp-history-head strong { color:#f5f7fa; font-size:.82rem; font-weight:950; }
-      .league-player-card .lp-history-head span, .league-player-card .lp-history-note { color:#8f98a6; font-size:.63rem; font-weight:700; }
+      .league-player-card .lp-history-head span { color:#8f98a6; font-size:.63rem; font-weight:700; }
       .league-player-card .lp-history-legend { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px 10px; padding-top:2px; }
       .league-player-card .lp-history-legend span { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
       .league-player-card .lp-history-legend i { width:18px; height:3px; border-radius:4px; background:var(--legend); }
@@ -316,11 +308,10 @@
       .league-player-card .lp-grid { stroke:rgba(174,181,191,.18); stroke-width:1; stroke-dasharray:4 5; }
       .league-player-card .lp-axis { stroke:rgba(174,181,191,.32); stroke-width:1; }
       .league-player-card .lp-line { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
-      .league-player-card .lp-match-tick { stroke-width:2.2; opacity:.88; }
+      .league-player-card .lp-date-tick { stroke:#8f98a6; stroke-width:1; }
       .league-player-card .lp-y-label, .league-player-card .lp-x-label { fill:#8f98a6; font-size:8px; font-weight:750; }
       .league-player-card .lp-empty-label { fill:#aeb5bf; font-size:10px; font-weight:800; }
       .league-player-card .lp-history-empty { padding:24px 8px; color:#8f98a6; font-size:.72rem; text-align:center; }
-      .league-player-card .lp-history-note { margin-top:2px; }
     `;
     document.head.appendChild(style);
   }
