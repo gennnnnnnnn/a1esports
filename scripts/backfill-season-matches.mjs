@@ -194,12 +194,14 @@ async function main() {
     }
   }
 
+  const backfillUpdatedAt = new Date().toISOString();
   data.matches = [...existing.values()].sort((a, b) => new Date(b.gameStart) - new Date(a.gameStart));
+  data.updatedAt = backfillUpdatedAt;
   data.source = {
     ...(data.source || {}),
     rankedQueues: RANKED_QUEUES,
     allSeasonMatchesBackfilled: true,
-    allSeasonBackfillUpdatedAt: new Date().toISOString()
+    allSeasonBackfillUpdatedAt: backfillUpdatedAt
   };
   await writeFile(OUTPUT_PATH, `${JSON.stringify(data, null, 2)}\n`, "utf8");
   console.log(`All-season backfill complete: ${added} new player-match rows added; ${data.matches.length} total rows stored.`);
