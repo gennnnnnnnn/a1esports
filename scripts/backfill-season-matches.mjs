@@ -155,11 +155,11 @@ async function riotFetch(url, attempt = 1) {
   throw new Error(`Riot API error ${response.status}: ${body.slice(0, 500)}`);
 }
 
-async function allMatchIds(player, queueId, season) {
+async function allRankedMatchIds(player, season) {
   const ids = [];
   for (let start = 0; ; start += PAGE_SIZE) {
     const page = await riotFetch(
-      `https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=${start}&count=${PAGE_SIZE}&queue=${queueId}&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
+      `https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=${start}&count=${PAGE_SIZE}&type=ranked&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
     );
     ids.push(...page);
     if (page.length < PAGE_SIZE) break;
@@ -178,19 +178,17 @@ async function main() {
     if (!player.puuid) continue;
     for (let year = HISTORY_START_YEAR; year <= currentYear; year += 1) {
       for (const season of seasonWindowsForYear(year)) {
-        for (const queueId of RANKED_QUEUES) {
-          const ids = await allMatchIds(player, queueId, season);
-          console.log(`${player.name}: ${ids.length} total ${queueLabel(queueId)} matches in ${season.label}`);
-          for (const matchId of ids) {
-            const key = matchKey(matchId, player.name);
-            if (existing.has(key)) continue;
-            const match = await riotFetch(`https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/${enc(matchId)}`);
-            const part = (match.info?.participants || []).find((entry) => entry.puuid === player.puuid);
-            if (!part || !RANKED_QUEUES.includes(Number(match.info?.queueId))) continue;
-            const row = toMatchRow(player, match, part);
-            existing.set(key, row);
-            added += 1;
-          }
+        const ids = await allRankedMatchIds(player, season);
+        console.log(`${player.name}: ${ids.length} total ranked matches in ${season.label}`);
+        for (const matchId of ids) {
+          const key = matchKey(matchId, player.name);
+          if (existing.has(key)) continue;
+          const match = await riotFetch(`https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/${enc(matchId)}`);
+          const part = (match.info?.participants || []).find((entry) => entry.puuid === player.puuid);
+          if (!part || !RANKED_QUEUES.includes(Number(match.info?.queueId))) continue;
+          const row = toMatchRow(player, match, part);
+          existing.set(key, row);
+          added += 1;
         }
       }
     }
