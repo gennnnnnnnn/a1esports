@@ -2,6 +2,17 @@ name: Update Rift Lab data and deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      backfill:
+        description: Recover complete historical ranked match data
+        required: false
+        type: boolean
+        default: false
+      continue_refresh_loop:
+        description: Continue the five-minute live refresh loop
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: "2-57/5 * * * *"
   push:
@@ -9,12 +20,13 @@ on:
       - main
 
 permissions:
+  actions: write
   contents: read
   pages: write
   id-token: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[backfill-data]')) && 'backfill' || 'refresh' }}
+  group: ${{ github.workflow }}-${{ ((github.event_name == 'workflow_dispatch' && inputs.backfill) || contains(github.event.head_commit.message, '[backfill-data]')) && 'backfill' || 'refresh' }}
   cancel-in-progress: true
 
 jobs:
@@ -25,6 +37,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      - name: Start refresh interval
+        id: refresh-interval
+        run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Check out repository
         uses: actions/checkout@v4
 
@@ -42,11 +58,11 @@ jobs:
           HISTORICAL_MATCH_COUNT_PER_QUEUE: 20
           ENRICH_MISSING_MATCH_LIMIT: 160
           RIOT_REQUEST_DELAY_MS: 1250
-          HISTORICAL_BACKFILL: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+          HISTORICAL_BACKFILL: ${{ ((github.event_name == 'workflow_dispatch' && inputs.backfill) || contains(github.event.head_commit.message, '[backfill-data]')) && 'true' || 'false' }}
         run: npm run update:data
 
       - name: Backfill every ranked match in each season
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[backfill-data]'))
+        if: (github.event_name == 'workflow_dispatch' && inputs.backfill) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[backfill-data]'))
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           HISTORY_START_YEAR: 2022
@@ -83,3 +99,28 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Wait for the next refresh interval
+        if: success() && !((github.event_name == 'workflow_dispatch' && inputs.backfill) || contains(github.event.head_commit.message, '[backfill-data]')) && (github.event_name != 'workflow_dispatch' || inputs.continue_refresh_loop)
+        env:
+          STARTED_AT: ${{ steps.refresh-interval.outputs.started_at }}
+        run: |
+          elapsed=$(( $(date +%s) - STARTED_AT ))
+          remaining=$(( 300 - elapsed ))
+          if [ "$remaining" -gt 0 ]; then
+            sleep "$remaining"
+          fi
+
+      - name: Continue live refresh loop
+        if: success() && !((github.event_name == 'workflow_dispatch' && inputs.backfill) || contains(github.event.head_commit.message, '[backfill-data]')) && (github.event_name != 'workflow_dispatch' || inputs.continue_refresh_loop)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: "update-data-and-deploy.yml",
+              ref: context.ref.replace("refs/heads/", ""),
+              inputs: { continue_refresh_loop: "true" }
+            });
