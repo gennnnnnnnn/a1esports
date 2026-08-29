@@ -176,95 +176,6 @@
     return `${displayTime(match.gameStart)} · ${queue} · ${champion}${result ? ` · ${result}` : ""}`;
   }
 
-  function dataDragonVersion(gameVersion) {
-    const match = String(gameVersion || "").match(/^(\d+)\.(\d+)/);
-    return match ? `${match[1]}.${match[2]}.1` : "14.24.1";
-  }
-
-  function championIcon(match) {
-    const champion = String(match.champion || "Unknown");
-    const aliases = {
-      "Aurelion Sol": "AurelionSol", "Bel'Veth": "Belveth", "Cho'Gath": "Chogath",
-      "Dr. Mundo": "DrMundo", "Jarvan IV": "JarvanIV", "Kai'Sa": "Kaisa",
-      "Kha'Zix": "Khazix", "Kog'Maw": "KogMaw", "K'Sante": "KSante",
-      "Lee Sin": "LeeSin", "Master Yi": "MasterYi", "Miss Fortune": "MissFortune",
-      "Nunu & Willump": "Nunu", "Rek'Sai": "RekSai", "Renata Glasc": "Renata",
-      "Tahm Kench": "TahmKench", "Twisted Fate": "TwistedFate", "Vel'Koz": "Velkoz",
-      "Xin Zhao": "XinZhao", Wukong: "MonkeyKing"
-    };
-    const key = aliases[champion] || champion.replace(/[.'&\s]/g, "");
-    return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(match.gameVersion)}/img/champion/${encodeURIComponent(key)}.png`;
-  }
-
-  function itemIcon(itemId, gameVersion) {
-    return `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/item/${encodeURIComponent(itemId)}.png`;
-  }
-
-  function spellIcon(spellId, gameVersion) {
-    const keys = {
-      1: "SummonerBoost", 3: "SummonerExhaust", 4: "SummonerFlash", 6: "SummonerHaste",
-      7: "SummonerHeal", 11: "SummonerSmite", 12: "SummonerTeleport", 13: "SummonerMana",
-      14: "SummonerDot", 21: "SummonerBarrier", 32: "SummonerSnowball"
-    };
-    const key = keys[Number(spellId)];
-    return key ? `https://ddragon.leagueoflegends.com/cdn/${dataDragonVersion(gameVersion)}/img/spell/${key}.png` : "";
-  }
-
-  function matchHistoryRow(match) {
-    const won = String(match.result || "").toLowerCase() === "win";
-    const queue = QUEUES[Number(match.queueId)]?.label || match.queueLabel || "Ranked";
-    const duration = Number(match.durationMin) || 0;
-    const items = (Array.isArray(match.items) ? match.items : [])
-      .filter((item) => Number(item) > 0)
-      .map((item) => `<img src="${itemIcon(item, match.gameVersion)}" alt="Item ${escapeHtml(item)}" loading="lazy" onerror="this.remove()">`)
-      .join("");
-    const spells = (Array.isArray(match.summonerSpells) ? match.summonerSpells : [])
-      .map((spell) => spellIcon(spell, match.gameVersion))
-      .filter(Boolean)
-      .map((src) => `<img src="${src}" alt="Summoner spell" loading="lazy" onerror="this.remove()">`)
-      .join("");
-
-    return `
-      <article class="ranked-match-row ${won ? "win" : "loss"}">
-        <img class="match-history-champion" src="${championIcon(match)}" alt="${escapeHtml(match.champion || "Unknown champion")}" loading="lazy" onerror="this.style.visibility='hidden'">
-        <div class="match-history-main">
-          <strong>${escapeHtml(match.champion || "Unknown champion")}</strong>
-          <span>${escapeHtml(`${won ? "Win" : "Loss"} · ${queue}`)}</span>
-        </div>
-        <div class="match-history-stats">
-          <strong>${escapeHtml(`${Number(match.kills) || 0}/${Number(match.deaths) || 0}/${Number(match.assists) || 0}`)}</strong>
-          <span>${escapeHtml(`${Number(match.cs) || 0} CS · ${duration.toFixed(0)}m`)}</span>
-        </div>
-        <div class="match-history-loadout">
-          <span class="match-history-spells">${spells}</span>
-          <span class="match-history-items">${items || '<i class="match-history-no-items">No build</i>'}</span>
-        </div>
-        <time datetime="${escapeHtml(match.gameStart || "")}">${escapeHtml(displayTime(match.gameStart))} GMT+7</time>
-      </article>
-    `;
-  }
-
-  function matchHistoryMarkup(matches) {
-    const newest = [...matches].sort((a, b) => new Date(b.gameStart) - new Date(a.gameStart));
-    const visible = newest.slice(0, 5);
-    const older = newest.slice(5);
-    return `
-      <section class="ranked-match-history">
-        <div class="match-history-head">
-          <strong>Match History</strong>
-          <span>${newest.length} selected-season games</span>
-        </div>
-        ${newest.length ? `<div class="match-history-list">${visible.map(matchHistoryRow).join("")}</div>` : '<div class="match-history-empty">No ranked matches are stored for this player in the selected season.</div>'}
-        ${older.length ? `
-          <details class="match-history-older">
-            <summary>Show ${older.length} older matches</summary>
-            <div class="match-history-list">${older.map(matchHistoryRow).join("")}</div>
-          </details>
-        ` : ""}
-      </section>
-    `;
-  }
-
   function timelineOnlySvg(rows) {
     const width = 760;
     const height = 92;
@@ -410,33 +321,6 @@
       .league-player-card .lp-empty-label { fill:#aeb5bf; font-size:10px; font-weight:800; }
       .league-player-card .lp-history-empty { padding:24px 8px; color:#8f98a6; font-size:.72rem; text-align:center; }
       .league-player-card .lp-history-note { margin-top:2px; }
-      .league-player-card .ranked-match-history { margin-top:12px; padding:11px 10px; border:1px solid #454a52; border-radius:4px; background:#111419; }
-      .league-player-card .match-history-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
-      .league-player-card .match-history-head strong { color:#f5f7fa; font-size:.82rem; font-weight:950; }
-      .league-player-card .match-history-head span { color:#8f98a6; font-size:.64rem; font-weight:750; }
-      .league-player-card .match-history-list { display:grid; gap:5px; }
-      .league-player-card .ranked-match-row { display:grid; grid-template-columns:36px minmax(105px,1fr) 82px minmax(130px,1.25fr) auto; align-items:center; gap:8px; min-width:0; padding:6px 7px; border-left:3px solid #ff5f73; border-radius:3px; background:#1c2026; }
-      .league-player-card .ranked-match-row.win { border-left-color:#5bf2a8; }
-      .league-player-card .match-history-champion { width:36px; height:36px; border-radius:4px; object-fit:cover; }
-      .league-player-card .match-history-main, .league-player-card .match-history-stats { display:grid; min-width:0; gap:2px; }
-      .league-player-card .match-history-main strong, .league-player-card .match-history-stats strong { overflow:hidden; color:#f5f7fa; font-size:.72rem; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
-      .league-player-card .match-history-main span, .league-player-card .match-history-stats span, .league-player-card .ranked-match-row time { color:#9ca5b3; font-size:.58rem; font-weight:700; white-space:nowrap; }
-      .league-player-card .match-history-loadout { display:flex; align-items:center; min-width:0; gap:5px; }
-      .league-player-card .match-history-spells, .league-player-card .match-history-items { display:flex; align-items:center; gap:2px; min-width:0; }
-      .league-player-card .match-history-spells img, .league-player-card .match-history-items img { width:22px; height:22px; border-radius:3px; object-fit:cover; }
-      .league-player-card .match-history-no-items { color:#7f8997; font-size:.56rem; font-style:normal; }
-      .league-player-card .match-history-older { margin-top:7px; }
-      .league-player-card .match-history-older summary { padding:7px; border-radius:3px; background:#20252c; color:#b9c2ce; cursor:pointer; font-size:.64rem; font-weight:850; text-align:center; list-style-position:inside; }
-      .league-player-card .match-history-older[open] summary { margin-bottom:5px; }
-      .league-player-card .match-history-empty { padding:16px 8px; color:#8f98a6; font-size:.68rem; text-align:center; }
-      @media (max-width:700px) {
-        .league-player-card .ranked-match-row { grid-template-columns:34px minmax(0,1fr) auto; gap:6px; }
-        .league-player-card .match-history-champion { width:34px; height:34px; }
-        .league-player-card .match-history-stats { justify-items:end; }
-        .league-player-card .match-history-loadout { grid-column:2 / -1; }
-        .league-player-card .ranked-match-row time { grid-column:2 / -1; }
-        .league-player-card .match-history-spells img, .league-player-card .match-history-items img { width:20px; height:20px; }
-      }
     `;
     document.head.appendChild(style);
   }
@@ -449,18 +333,13 @@
     const snapshots = playerSnapshots(raw, player);
     const signature = [selectedSeasonRange().label, ...matches.map((match) => `${match.queueId}:${match.matchId}`), ...snapshots.map((point) => `${point.queueId}:${point.matchId}:${point.score}`)].join("|");
     let panel = card.querySelector(".ranked-lp-history");
-    let matchHistory = card.querySelector(".ranked-match-history");
-    if (panel?.dataset.signature === signature && matchHistory?.dataset.signature === signature) return;
+    if (panel?.dataset.signature === signature) return;
     const holder = document.createElement("div");
-    holder.innerHTML = `${markup(matches, snapshots)}${matchHistoryMarkup(matches)}`;
-    const nextPanel = holder.querySelector(".ranked-lp-history");
-    const nextMatchHistory = holder.querySelector(".ranked-match-history");
-    nextPanel.dataset.signature = signature;
-    nextMatchHistory.dataset.signature = signature;
-    if (panel) panel.replaceWith(nextPanel);
-    else (card.querySelector(".league-card-body") || card).appendChild(nextPanel);
-    if (matchHistory) matchHistory.replaceWith(nextMatchHistory);
-    else (card.querySelector(".league-card-body") || card).appendChild(nextMatchHistory);
+    holder.innerHTML = markup(matches, snapshots).trim();
+    const next = holder.firstElementChild;
+    next.dataset.signature = signature;
+    if (panel) panel.replaceWith(next);
+    else (card.querySelector(".league-card-body") || card).appendChild(next);
   }
 
   async function patchAll() {
