@@ -14,7 +14,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: ${{ github.workflow }}-${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[backfill-data]')) && 'backfill' || 'refresh' }}
   cancel-in-progress: true
 
 jobs:
