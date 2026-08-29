@@ -874,6 +874,15 @@ h3 {
     0 0 0 1px rgba(242, 193, 91, 0.06);
 }
 
+.schedule-cell.is-today {
+  position: relative;
+  z-index: 2;
+  background: #17313b;
+  outline: 2px solid #28d7f3;
+  outline-offset: 1px;
+  box-shadow: 0 0 8px rgba(40, 215, 243, 0.5);
+}
+
 .schedule-season-separator {
   position: absolute;
   top: 16px;

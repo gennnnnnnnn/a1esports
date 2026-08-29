@@ -80,6 +80,9 @@ window.RIFT_LAB_CONFIG = {
     const mondayOffset = (jan1.getUTCDay() + 6) % 7;
     const gridStart = new Date(jan1);
     gridStart.setUTCDate(gridStart.getUTCDate() - mondayOffset);
+    const today = gmt7Parts(new Date());
+    const todayKey = today ? dateKey(today.year, today.month, today.day) : "";
+    let todayCell = null;
 
     schedule.querySelectorAll(".schedule-row").forEach((row, dayIndex) => {
       row.querySelectorAll(".schedule-cell").forEach((cell, weekIndex) => {
@@ -92,9 +95,13 @@ window.RIFT_LAB_CONFIG = {
         const text = games ? String(games) : "";
         if (cell.textContent !== text) cell.textContent = text;
         cell.classList.toggle("has-games", games > 0);
+        const cellKey = dateKey(year, date.getUTCMonth(), date.getUTCDate());
+        const isToday = cellKey === todayKey;
+        cell.classList.toggle("is-today", isToday);
+        if (isToday) todayCell = cell;
 
         const title = [
-          `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}: ${games} games`,
+          `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}${isToday ? " (today)" : ""}: ${games} games`,
           `Solo/Duo: ${record.solo.wins}W - ${record.solo.losses}L`,
           `Flex: ${record.flex.wins}W - ${record.flex.losses}L`,
           `Ranked Team 5v5: ${record.team.wins}W - ${record.team.losses}L`
@@ -103,6 +110,18 @@ window.RIFT_LAB_CONFIG = {
         if (cell.getAttribute("aria-label") !== title) cell.setAttribute("aria-label", title);
       });
     });
+
+    const scroll = schedule.querySelector(".player-schedule-scroll");
+    if (todayCell && scroll && scroll.dataset.centeredDay !== todayKey) {
+      scroll.dataset.centeredDay = todayKey;
+      requestAnimationFrame(() => {
+        const scrollRect = scroll.getBoundingClientRect();
+        const cellRect = todayCell.getBoundingClientRect();
+        const offset = cellRect.left + cellRect.width / 2 - (scrollRect.left + scroll.clientWidth / 2);
+        const target = Math.max(0, Math.min(scroll.scrollLeft + offset, scroll.scrollWidth - scroll.clientWidth));
+        scroll.scrollLeft = target;
+      });
+    }
   }
 
   function patchSchedules() {
