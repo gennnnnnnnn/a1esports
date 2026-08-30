@@ -111,7 +111,10 @@ function dedupeHistory(history) {
 
 const data = JSON.parse(await readFile(OUTPUT_PATH, "utf8"));
 const existing = await loadExisting();
-let history = Array.isArray(existing.lpHistory) ? [...existing.lpHistory] : [];
+let history = [
+  ...(Array.isArray(data.lpHistory) ? data.lpHistory : []),
+  ...(Array.isArray(existing.lpHistory) ? existing.lpHistory : [])
+];
 
 for (const player of data.players || []) {
   for (const queue of QUEUES) {

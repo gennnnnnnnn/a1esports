@@ -127,6 +127,7 @@ async function buildRiftLabData() {
     summaryRows,
     latestNotes,
     matches,
+    lpHistory: Array.isArray(existingData.lpHistory) ? existingData.lpHistory : [],
     metrics: {
       trackedPlayers: players.length,
       importedMatches: matches.length,
@@ -535,6 +536,10 @@ async function loadExistingData() {
     console.log(`Loaded ${Array.isArray(data.matches) ? data.matches.length : 0} existing deployed matches`);
     return data;
   } catch (remoteError) {
+    if (process.env.GITHUB_ACTIONS === "true") {
+      throw new Error(`Could not load deployed baseline data: ${remoteError.message}`);
+    }
+
     try {
       const text = await readFile(OUTPUT_PATH, "utf8");
       const data = JSON.parse(text);
