@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 
 const OUTPUT_PATH = new URL("../data/rift-lab.json", import.meta.url);
+const RECOVERY_PATH = new URL("../data/lp-history-recovery.json", import.meta.url);
 const EXISTING_DATA_URL = process.env.EXISTING_DATA_URL || "https://gennnnnnnnn.github.io/a1esports/data/rift-lab.json";
 const QUEUES = [
   { queueId: 42, mode: "team5v5", label: "Ranked Team 5v5" },
@@ -47,6 +48,12 @@ async function loadExisting() {
     console.warn(`LP history: could not load deployed history (${error.message}); starting from current output.`);
     return {};
   }
+}
+
+async function loadRecovery() {
+  const recovery = JSON.parse(await readFile(RECOVERY_PATH, "utf8"));
+  if (!Array.isArray(recovery)) throw new Error("LP history recovery archive must be an array.");
+  return recovery;
 }
 
 function latestQueueMatch(data, player, queueId) {
@@ -111,7 +118,9 @@ function dedupeHistory(history) {
 
 const data = JSON.parse(await readFile(OUTPUT_PATH, "utf8"));
 const existing = await loadExisting();
+const recovery = await loadRecovery();
 let history = [
+  ...recovery,
   ...(Array.isArray(data.lpHistory) ? data.lpHistory : []),
   ...(Array.isArray(existing.lpHistory) ? existing.lpHistory : [])
 ];
