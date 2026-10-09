@@ -19,9 +19,7 @@
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
         grid-template-areas:
           "identity identity identity"
-          "ranks radar schedule"
-          "record radar history"
-          "profile profile history";
+          "ranks form activity";
         gap: 12px;
         align-items: start;
       }
@@ -33,13 +31,47 @@
 
       .player-grid .league-id-row { grid-area: identity; }
       .player-grid .league-ranks { grid-area: ranks; }
-      .player-grid .league-record { grid-area: record; }
-      .player-grid .league-extra { grid-area: profile; }
-      .player-grid .form-radar { grid-area: radar; }
-      .player-grid .player-schedule { grid-area: schedule; }
-      .player-grid .league-card-body > .ranked-lp-history {
-        grid-area: history;
+      .player-grid .player-form-column { grid-area: form; }
+      .player-grid .player-history-column { grid-area: activity; }
+      .player-grid .player-form-column,
+      .player-grid .player-history-column {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .player-grid .league-card-body .player-form-column > *,
+      .player-grid .league-card-body .player-history-column > * {
+        min-width: 0;
         margin-top: 0;
+      }
+
+      .player-grid .sync-stamp {
+        max-width: none;
+        align-items: baseline;
+      }
+
+      .player-grid .sync-stamp::before {
+        content: "Last match:";
+        color: #f5f7fa;
+        font-size: .9rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .player-grid .league-card-body .form-radar-header,
+      .player-grid .league-extra > span { display: none; }
+      .player-grid .profile-split-row {
+        flex-direction: column;
+        align-items: stretch;
+        min-width: 0;
+      }
+      .player-grid .profile-chip-row {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      @media (max-width: 600px) {
+        .player-grid .sync-stamp { flex-wrap: wrap; }
       }
 
       @media (max-width: 1000px) {
@@ -47,18 +79,15 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
           grid-template-areas:
             "identity identity"
-            "ranks radar"
-            "record radar"
-            "profile profile"
-            "schedule schedule"
-            "history history";
+            "ranks form"
+            "activity activity";
         }
       }
 
       @media (max-width: 600px) {
         .player-grid .league-card-body {
           grid-template-columns: minmax(0, 1fr);
-          grid-template-areas: "identity" "ranks" "record" "radar" "profile" "schedule" "history";
+          grid-template-areas: "identity" "ranks" "form" "activity";
         }
       }
 
@@ -202,8 +231,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20260829-3"></script>
-    <script src="js/app.js?v=20260829-2"></script>
+    <script src="js/config.example.js?v=20261009-1"></script>
+    <script src="js/app.js?v=20261009-1"></script>
     <script>
       (() => {
         const RECENT_LIMIT = 20;

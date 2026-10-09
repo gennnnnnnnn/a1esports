@@ -56,21 +56,22 @@
     return rawDataPromise;
   }
 
-  function selectedSeasonRange() {
+  function selectedYearRange() {
     const season = window.RIFT_LAB_SELECTED_SEASON_DETAIL;
-    const start = season?.start ? new Date(season.start) : null;
-    const end = season?.end ? new Date(season.end) : null;
+    const date = season?.start ? new Date(season.start) : new Date();
+    const year = new Date(date.getTime() + GMT7_OFFSET_MS).getUTCFullYear();
     return {
-      start: start && !Number.isNaN(start.getTime()) ? start : null,
-      end: end && !Number.isNaN(end.getTime()) ? end : null,
-      label: season?.label || "Selected season"
+      start: new Date(Date.UTC(year, 0, 1) - GMT7_OFFSET_MS),
+      end: new Date(Date.UTC(year + 1, 0, 1) - GMT7_OFFSET_MS),
+      year,
+      label: String(year)
     };
   }
 
-  function inSelectedSeason(value) {
+  function inSelectedYear(value) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return false;
-    const range = selectedSeasonRange();
+    const range = selectedYearRange();
     if (range.start && date < range.start) return false;
     if (range.end && date >= range.end) return false;
     return true;
@@ -84,7 +85,7 @@
     return (raw.matches || [])
       .filter((match) => samePlayer(match, player))
       .filter((match) => QUEUES[Number(match.queueId)])
-      .filter((match) => inSelectedSeason(match.gameStart))
+      .filter((match) => inSelectedYear(match.gameStart))
       .filter((match) => match.gameStart && !Number.isNaN(new Date(match.gameStart).getTime()))
       .sort((a, b) => new Date(a.gameStart) - new Date(b.gameStart));
   }
@@ -93,7 +94,7 @@
     return (raw.lpHistory || [])
       .filter((point) => samePlayer(point, player))
       .filter((point) => QUEUES[Number(point.queueId)])
-      .filter((point) => inSelectedSeason(point.gameStart || point.capturedAt))
+      .filter((point) => inSelectedYear(point.gameStart || point.capturedAt))
       .filter((point) => Number.isFinite(Number(point.score)))
       .sort((a, b) => new Date(a.gameStart || a.capturedAt) - new Date(b.gameStart || b.capturedAt));
   }
@@ -176,20 +177,30 @@
     return `${displayTime(match.gameStart)} · ${queue} · ${champion}${result ? ` · ${result}` : ""}`;
   }
 
+  function annualAxis(left, right, top, bottom) {
+    const range = selectedYearRange();
+    const x = (date) => left + ((new Date(date) - range.start) / (range.end - range.start)) * (right - left);
+    const months = Array.from({ length: 12 }, (_, month) => {
+      const date = new Date(Date.UTC(range.year, month, 1) - GMT7_OFFSET_MS);
+      const label = date.toLocaleDateString("en-US", { month: "short", timeZone: "Asia/Ho_Chi_Minh" });
+      return `<line class="lp-date-tick" x1="${x(date).toFixed(1)}" y1="${bottom}" x2="${x(date).toFixed(1)}" y2="${bottom + 6}"></line><text class="lp-x-label" x="${x(date).toFixed(1)}" y="${bottom + 22}" text-anchor="middle">${label}</text>`;
+    }).join("");
+    const boundaries = range.year === 2026 ? [[3, 29], [6, 29]] : [[4, 1], [8, 1]];
+    const markers = boundaries.map(([month, day], index) => {
+      const date = new Date(Date.UTC(range.year, month, day) - GMT7_OFFSET_MS);
+      const position = x(date).toFixed(1);
+      return `<line class="lp-season-marker" x1="${position}" y1="${top}" x2="${position}" y2="${bottom}"><title>${range.year} Season ${index + 2} starts ${displayDate(date)} GMT+7</title></line>`;
+    }).join("");
+    return { x, markup: `${markers}<line class="lp-axis" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"></line>${months}` };
+  }
+
   function timelineOnlySvg(rows) {
     const width = 760;
     const height = 92;
     const left = 18;
     const right = 12;
-    const dateTicks = rows.length ? `
-      <line class="lp-date-tick" x1="${left}" y1="59" x2="${left}" y2="65"></line>
-      <line class="lp-date-tick" x1="${width - right}" y1="59" x2="${width - right}" y2="65"></line>
-    ` : "";
-    const labels = rows.length ? `
-      <text class="lp-x-label" x="${left}" y="80">${escapeHtml(displayDate(rows[0].date))}</text>
-      <text class="lp-x-label" x="${width - right}" y="80" text-anchor="end">${escapeHtml(displayDate(rows[rows.length - 1].date))}</text>
-    ` : "";
-    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Season ranked match timeline"><line class="lp-axis" x1="${left}" y1="59" x2="${width - right}" y2="59"></line>${dateTicks}${labels}<text class="lp-empty-label" x="${width / 2}" y="22" text-anchor="middle">LP snapshots are not available for these matches yet</text></svg>`;
+    const axis = annualAxis(left, width - right, 30, 59);
+    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Annual ranked match timeline">${axis.markup}<text class="lp-empty-label" x="${width / 2}" y="22" text-anchor="middle">LP snapshots are not available for these matches yet</text></svg>`;
   }
 
   function historySvg(matches, snapshots) {
@@ -200,7 +211,6 @@
     const right = 12;
     const top = 16;
     const bottom = 42;
-    const plotW = width - left - right;
     const plotH = height - top - bottom;
     const allScores = rows.flatMap((row) => [row.solo, row.flex, row.team]).filter(Number.isFinite);
     if (!allScores.length) return timelineOnlySvg(rows);
@@ -211,23 +221,16 @@
     maxY = Math.ceil((maxY + 80) / 100) * 100;
     if (minY === maxY) maxY = minY + 100;
 
-    const x = (index) => left + (rows.length <= 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
+    const axis = annualAxis(left, width - right, top, height - bottom);
+    const x = (index) => axis.x(rows[index].date);
     const y = (value) => top + ((maxY - value) / (maxY - minY)) * plotH;
     const yTicks = Array.from({ length: 5 }, (_, i) => maxY - ((maxY - minY) * i) / 4);
-    const xTickCount = Math.min(7, rows.length);
-    const xTickIndices = xTickCount <= 1 ? [0] : Array.from(new Set(
-      Array.from({ length: xTickCount }, (_, i) => Math.round(i * (rows.length - 1) / (xTickCount - 1)))
-    ));
 
     const grid = yTicks.map((tick) => `
       <line class="lp-grid" x1="${left}" y1="${y(tick).toFixed(1)}" x2="${width - right}" y2="${y(tick).toFixed(1)}"></line>
       <text class="lp-y-label" x="${left - 7}" y="${(y(tick) + 3).toFixed(1)}" text-anchor="end">${escapeHtml(scoreLabel(tick))}</text>
     `).join("");
 
-    const xLabels = xTickIndices.map((index) => `
-      <line class="lp-date-tick" x1="${x(index).toFixed(1)}" y1="${height - bottom}" x2="${x(index).toFixed(1)}" y2="${height - bottom + 6}"></line>
-      <text class="lp-x-label" x="${x(index).toFixed(1)}" y="${height - 8}" text-anchor="middle">${escapeHtml(displayDate(rows[index].date))}</text>
-    `).join("");
 
     const drawSeries = (field, queueId) => {
       const queue = QUEUES[queueId];
@@ -256,28 +259,30 @@
     };
 
     return `
-      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Match-based LP history for every ranked match in the selected season">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Annual ranked LP history for ${selectedYearRange().year}">
         ${grid}
+        ${axis.markup}
         ${drawSeries("solo", 420)}
         ${drawSeries("flex", 440)}
         ${drawSeries("team", 42)}
-        <line class="lp-axis" x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}"></line>
-        ${xLabels}
       </svg>
     `;
   }
 
   function markup(matches, snapshots) {
-    const range = selectedSeasonRange();
+    const range = selectedYearRange();
     const counts = { 42: 0, 420: 0, 440: 0 };
     matches.forEach((match) => { if (counts[Number(match.queueId)] !== undefined) counts[Number(match.queueId)] += 1; });
+    const wins = matches.filter((match) => match.result === "Win").length;
+    const losses = matches.length - wins;
+    const winRate = matches.length ? Math.round(wins / matches.length * 100) : 0;
 
     return `
       <section class="ranked-lp-history">
         <div class="lp-history-head">
           <div>
-            <strong>Ranked LP History</strong>
-            <span>${escapeHtml(`${range.label} · ${matches.length} matches · match-based · GMT+7`)}</span>
+            <strong>${range.year}</strong>
+            <span>${escapeHtml(`${matches.length} matches · ${wins}W/${losses}L (${winRate}%)`)}</span>
           </div>
           <div class="lp-history-legend">
             <span><i style="--legend:${QUEUES[420].color}"></i>Solo/Duo (${counts[420]})</span>
@@ -285,7 +290,7 @@
             <span><i style="--legend:${QUEUES[42].color}"></i>Ranked Team 5v5 (${counts[42]})</span>
           </div>
         </div>
-        <div class="lp-history-chart">${matches.length ? historySvg(matches, snapshots) : '<div class="lp-history-empty">No matches from these three ranked queues are stored for this season.</div>'}</div>
+        <div class="lp-history-chart">${historySvg(matches, snapshots)}</div>
       </section>
     `;
   }
@@ -309,6 +314,7 @@
       .league-player-card .lp-axis { stroke:rgba(174,181,191,.32); stroke-width:1; }
       .league-player-card .lp-line { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
       .league-player-card .lp-date-tick { stroke:#8f98a6; stroke-width:1; }
+      .league-player-card .lp-season-marker { stroke:#f2c15b; stroke-width:2; }
       .league-player-card .lp-y-label, .league-player-card .lp-x-label { fill:#8f98a6; font-size:8px; font-weight:750; }
       .league-player-card .lp-empty-label { fill:#aeb5bf; font-size:10px; font-weight:800; }
       .league-player-card .lp-history-empty { padding:24px 8px; color:#8f98a6; font-size:.72rem; text-align:center; }
@@ -322,7 +328,7 @@
     if (!player) return;
     const matches = playerMatches(raw, player);
     const snapshots = playerSnapshots(raw, player);
-    const signature = [selectedSeasonRange().label, ...matches.map((match) => `${match.queueId}:${match.matchId}`), ...snapshots.map((point) => `${point.queueId}:${point.matchId}:${point.score}`)].join("|");
+    const signature = [selectedYearRange().label, ...matches.map((match) => `${match.queueId}:${match.matchId}`), ...snapshots.map((point) => `${point.queueId}:${point.matchId}:${point.score}`)].join("|");
     let panel = card.querySelector(".ranked-lp-history");
     if (panel?.dataset.signature === signature) return;
     const holder = document.createElement("div");
@@ -330,7 +336,7 @@
     const next = holder.firstElementChild;
     next.dataset.signature = signature;
     if (panel) panel.replaceWith(next);
-    else (card.querySelector(".league-card-body") || card).appendChild(next);
+    else (card.querySelector(".player-history-column") || card.querySelector(".league-card-body") || card).appendChild(next);
   }
 
   async function patchAll() {

@@ -1025,6 +1025,7 @@
             ${showFlex ? leagueRankPanel("Ranked Flex", player, "flex") : ""}
           </div>
 
+          <div class="player-form-column">
           <div class="league-record">
             <strong>${escapeHtml(summary ? percentText(summary.winRate) : percentText(player.soloWr))}</strong>
             <span>${escapeHtml(summary ? `W/L (${summary.wins}/${summary.losses})` : `Solo (${formatNumber(player.soloWins)}/${formatNumber(player.soloLosses)})`)}</span>
@@ -1042,7 +1043,10 @@
             </div>
           </div>
 
-          ${document.body.dataset.page === "players" ? playerSchedule(player.name) : ""}
+          </div>
+          <div class="player-history-column">
+            ${document.body.dataset.page === "players" ? playerSchedule(player.name) : ""}
+          </div>
         </div>
       </article>
     `;
