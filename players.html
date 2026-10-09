@@ -36,7 +36,7 @@
         align-items: baseline;
         gap: 6px 10px;
       }
-      .player-grid .league-id-row p { margin: 0; }
+      .player-grid .league-id-row p { display: contents; }
       .player-grid .league-ranks { grid-area: ranks; }
       .player-grid .queue-title { text-align: center; }
       .player-grid .rank-main strong { white-space: nowrap; }
@@ -67,8 +67,7 @@
         white-space: nowrap;
       }
 
-      .player-grid .league-card-body .form-radar-header,
-      .player-grid .league-extra > span { display: none; }
+      .player-grid .league-card-body .form-radar-header { display: none; }
       .player-grid .profile-split-row {
         flex-direction: column;
         align-items: stretch;
@@ -78,8 +77,21 @@
         flex-wrap: wrap;
         justify-content: flex-start;
       }
+      .player-grid .profile-chip-row > * {
+        flex: 1 1 0;
+        justify-content: center;
+        padding-inline: 3px;
+      }
+      .player-grid .profile-icon-chip img { width: 18px; height: 18px; }
+      .player-grid .champion-profile-row > * {
+        flex-basis: calc(20% - 4px);
+        min-width: 0;
+      }
 
       @media (max-width: 600px) {
+        .player-grid .league-id-row { flex-wrap: wrap; }
+        .player-grid .league-id-row > div:first-child { width: 100%; }
+        .player-grid .sync-stamp { margin-left: auto; }
         .player-grid .sync-stamp { flex-wrap: wrap; }
       }
 
@@ -241,7 +253,7 @@
     </footer>
 
     <script src="js/config.example.js?v=20261009-1"></script>
-    <script src="js/app.js?v=20261009-2"></script>
+    <script src="js/app.js?v=20261009-3"></script>
     <script>
       (() => {
         const RECENT_LIMIT = 20;

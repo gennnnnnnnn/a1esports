@@ -1324,7 +1324,6 @@
 
     const champions = [...championCounts.entries()]
       .sort((a, b) => b[1] - a[1] || (championRecency.get(a[0]) || 0) - (championRecency.get(b[0]) || 0))
-      .slice(0, 5)
       .map(([name, games]) => ({ name, games }));
 
     return { roles, champions };
