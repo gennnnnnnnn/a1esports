@@ -417,7 +417,7 @@
           const signature = matches.map((match) => match.matchId || match.gameStart).join("|");
           if (radar.dataset.signature === signature) return;
           radar.dataset.signature = signature;
-          radar.innerHTML = `<div class="form-radar-header"><span>Last ${matches.length} form</span><span>Radar</span></div>${radarSvg(player, matches)}`;
+          radar.innerHTML = radarSvg(player, matches);
         }
 
         function upgradeCards() {
