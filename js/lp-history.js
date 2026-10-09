@@ -177,27 +177,29 @@
     return `${displayTime(match.gameStart)} · ${queue} · ${champion}${result ? ` · ${result}` : ""}`;
   }
 
-  function annualAxis(left, right, top, bottom) {
+  function matchAxis(rows, left, right, top, bottom) {
     const range = selectedYearRange();
-    const x = (date) => left + ((new Date(date) - range.start) / (range.end - range.start)) * (right - left);
-    const tickCount = Math.ceil((range.end - range.start) / (14 * 86400000));
-    const dates = Array.from({ length: tickCount }, (_, index) => {
-      const date = new Date(range.start.getTime() + index * 14 * 86400000);
-      const label = displayDate(date);
-      return `<line class="lp-date-tick" x1="${x(date).toFixed(1)}" y1="${bottom}" x2="${x(date).toFixed(1)}" y2="${bottom + 6}"></line><text class="lp-x-label" x="${x(date).toFixed(1)}" y="${bottom + 22}" text-anchor="middle">${label}</text>`;
+    const x = (index) => left + (rows.length <= 1 ? (right - left) / 2 : index / (rows.length - 1) * (right - left));
+    const step = Math.max(10, Math.ceil(110 * Math.max(0, rows.length - 1) / (right - left)));
+    const indices = Array.from({ length: Math.ceil(rows.length / step) }, (_, index) => index * step);
+    if (rows.length > 1 && rows.length - 1 - indices.at(-1) >= step / 2) indices.push(rows.length - 1);
+    const dates = indices.map((index) => {
+      const label = displayDate(rows[index].date);
+      return `<line class="lp-date-tick" x1="${x(index).toFixed(1)}" y1="${bottom}" x2="${x(index).toFixed(1)}" y2="${bottom + 6}"></line><text class="lp-x-label" x="${x(index).toFixed(1)}" y="${bottom + 22}" text-anchor="middle">${label}</text>`;
     }).join("");
     const boundaries = range.year === 2026 ? [[3, 29], [6, 29]] : [[4, 1], [8, 1]];
     const markers = boundaries.map(([month, day], index) => {
       const date = new Date(Date.UTC(range.year, month, day) - GMT7_OFFSET_MS);
-      const position = x(date).toFixed(1);
+      const indexAtBoundary = rows.findIndex((row) => new Date(row.date) >= date);
+      if (indexAtBoundary <= 0) return "";
+      const position = x(indexAtBoundary - .5).toFixed(1);
       return `<line class="lp-season-marker" x1="${position}" y1="${top}" x2="${position}" y2="${bottom}"><title>${range.year} Season ${index + 2} starts ${displayDate(date)} GMT+7</title></line>`;
     }).join("");
     return { x, markup: `${markers}<line class="lp-axis" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"></line>${dates}` };
   }
 
-  function annualChartWidth() {
-    const range = selectedYearRange();
-    return Math.round((range.end - range.start) / 86400000) * 10 + 60;
+  function matchChartWidth(count) {
+    return Math.max(760, Math.max(0, count - 1) * 12 + 24);
   }
 
   function plotLayout(plot, labels, height) {
@@ -205,17 +207,17 @@
   }
 
   function timelineOnlySvg(rows) {
-    const width = annualChartWidth();
+    const width = matchChartWidth(rows.length);
     const height = 92;
     const left = 0;
     const right = 12;
-    const axis = annualAxis(left, width - right, 30, 59);
+    const axis = matchAxis(rows, left, width - right, 30, 59);
     return plotLayout(`<svg viewBox="0 0 ${width} ${height}" style="width:${width}px;height:${height}px" role="img" aria-label="Annual ranked match timeline">${axis.markup}</svg>`, "", height);
   }
 
   function historySvg(matches, snapshots) {
     const rows = buildRows(matches, snapshots);
-    const width = annualChartWidth();
+    const width = matchChartWidth(rows.length);
     const height = 250;
     const left = 0;
     const right = 12;
@@ -231,8 +233,8 @@
     maxY = Math.ceil((maxY + 80) / 100) * 100;
     if (minY === maxY) maxY = minY + 100;
 
-    const axis = annualAxis(left, width - right, top, height - bottom);
-    const x = (index) => axis.x(rows[index].date);
+    const axis = matchAxis(rows, left, width - right, top, height - bottom);
+    const x = axis.x;
     const y = (value) => top + ((maxY - value) / (maxY - minY)) * plotH;
     const yTicks = Array.from({ length: 5 }, (_, i) => maxY - ((maxY - minY) * i) / 4);
 
@@ -345,10 +347,7 @@
     else (card.querySelector(".player-history-column") || card.querySelector(".league-card-body") || card).appendChild(next);
     requestAnimationFrame(() => {
       const chart = next.querySelector(".lp-history-chart");
-      const range = selectedYearRange();
-      const latest = matches.at(-1)?.gameStart || new Date();
-      const position = (new Date(latest) - range.start) / (range.end - range.start) * (annualChartWidth() - 12);
-      chart.scrollLeft = position - chart.clientWidth / 2;
+      chart.scrollLeft = chart.scrollWidth;
     });
   }
 
