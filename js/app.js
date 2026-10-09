@@ -1260,8 +1260,8 @@
 
     return `
       <section class="league-rank-panel ${mode === "flex" ? "flex" : ""}">
-        <div class="queue-title">${escapeHtml(label)}</div>
         <div class="rank-main">
+          <div class="queue-title">${escapeHtml(label)}</div>
           <div class="rank-emblem ${escapeHtml(rankClass(tier))}"></div>
           <div>
             <strong>${escapeHtml(rankText(tier, rank, lp))}</strong>

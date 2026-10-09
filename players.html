@@ -39,7 +39,7 @@
       .player-grid .league-id-row p { display: contents; }
       .player-grid .rename-activity { display: none; }
       .player-grid .league-ranks { grid-area: ranks; }
-      .player-grid .queue-title { text-align: center; }
+      .player-grid .queue-title { text-align: center; margin-bottom: 0; }
       .player-grid .rank-main strong { white-space: nowrap; }
       .player-grid .player-form-column { grid-area: form; }
       .player-grid .player-history-column { grid-area: activity; }
@@ -71,24 +71,24 @@
       }
 
       .player-grid .profile-chip-row {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
         gap: 4px;
       }
       .player-grid .profile-chip-row > * {
+        flex: 0 0 auto;
         min-width: 0;
         justify-content: center;
         padding-inline: 3px;
       }
       .player-grid .profile-icon-chip img { width: 18px; height: 18px; }
       .player-grid .champion-profile-row {
-        grid-auto-rows: 28px;
         max-height: 92px;
         overflow-y: auto;
         align-content: start;
         scrollbar-width: thin;
       }
-      .player-grid .champion-profile-row > .profile-chip { grid-column: 1 / -1; }
 
       @media (max-width: 600px) {
         .player-grid .league-id-row { flex-wrap: wrap; }
@@ -254,8 +254,8 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20261009-1"></script>
-    <script src="js/app.js?v=20261009-4"></script>
+    <script src="js/config.example.js?v=20261009-2"></script>
+    <script src="js/app.js?v=20261009-5"></script>
     <script>
       (() => {
         const RECENT_LIMIT = 20;

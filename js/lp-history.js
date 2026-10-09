@@ -180,9 +180,10 @@
   function annualAxis(left, right, top, bottom) {
     const range = selectedYearRange();
     const x = (date) => left + ((new Date(date) - range.start) / (range.end - range.start)) * (right - left);
-    const months = Array.from({ length: 12 }, (_, month) => {
-      const date = new Date(Date.UTC(range.year, month, 1) - GMT7_OFFSET_MS);
-      const label = date.toLocaleDateString("en-US", { month: "short", timeZone: "Asia/Ho_Chi_Minh" });
+    const tickCount = Math.ceil((range.end - range.start) / (14 * 86400000));
+    const dates = Array.from({ length: tickCount }, (_, index) => {
+      const date = new Date(range.start.getTime() + index * 14 * 86400000);
+      const label = displayDate(date);
       return `<line class="lp-date-tick" x1="${x(date).toFixed(1)}" y1="${bottom}" x2="${x(date).toFixed(1)}" y2="${bottom + 6}"></line><text class="lp-x-label" x="${x(date).toFixed(1)}" y="${bottom + 22}" text-anchor="middle">${label}</text>`;
     }).join("");
     const boundaries = range.year === 2026 ? [[3, 29], [6, 29]] : [[4, 1], [8, 1]];
@@ -191,21 +192,26 @@
       const position = x(date).toFixed(1);
       return `<line class="lp-season-marker" x1="${position}" y1="${top}" x2="${position}" y2="${bottom}"><title>${range.year} Season ${index + 2} starts ${displayDate(date)} GMT+7</title></line>`;
     }).join("");
-    return { x, markup: `${markers}<line class="lp-axis" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"></line>${months}` };
+    return { x, markup: `${markers}<line class="lp-axis" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"></line>${dates}` };
+  }
+
+  function annualChartWidth() {
+    const range = selectedYearRange();
+    return Math.round((range.end - range.start) / 86400000) * 10 + 60;
   }
 
   function timelineOnlySvg(rows) {
-    const width = 760;
+    const width = annualChartWidth();
     const height = 92;
     const left = 18;
     const right = 12;
     const axis = annualAxis(left, width - right, 30, 59);
-    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Annual ranked match timeline">${axis.markup}<text class="lp-empty-label" x="${width / 2}" y="22" text-anchor="middle">LP snapshots are not available for these matches yet</text></svg>`;
+    return `<svg viewBox="0 0 ${width} ${height}" style="width:${width}px;height:${height}px" role="img" aria-label="Annual ranked match timeline">${axis.markup}</svg>`;
   }
 
   function historySvg(matches, snapshots) {
     const rows = buildRows(matches, snapshots);
-    const width = 760;
+    const width = annualChartWidth();
     const height = 250;
     const left = 48;
     const right = 12;
@@ -259,7 +265,7 @@
     };
 
     return `
-      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Annual ranked LP history for ${selectedYearRange().year}">
+      <svg viewBox="0 0 ${width} ${height}" style="width:${width}px;height:${height}px" role="img" aria-label="Annual ranked LP history for ${selectedYearRange().year}">
         ${grid}
         ${axis.markup}
         ${drawSeries("solo", 420)}
@@ -281,7 +287,6 @@
       <section class="ranked-lp-history">
         <div class="lp-history-head">
           <div>
-            <strong>${range.year}</strong>
             <span>${escapeHtml(`${matches.length} matches · ${wins}W/${losses}L (${winRate}%)`)}</span>
           </div>
           <div class="lp-history-legend">
@@ -290,7 +295,7 @@
             <span><i style="--legend:${QUEUES[42].color}"></i>Ranked Team 5v5 (${counts[42]})</span>
           </div>
         </div>
-        <div class="lp-history-chart">${historySvg(matches, snapshots)}</div>
+        <div class="lp-history-chart" tabindex="0" role="region" aria-label="Scrollable annual LP graph">${historySvg(matches, snapshots)}</div>
       </section>
     `;
   }
@@ -310,6 +315,9 @@
       .league-player-card .lp-history-legend span { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
       .league-player-card .lp-history-legend i { width:18px; height:3px; border-radius:4px; background:var(--legend); }
       .league-player-card .lp-history-chart svg { display:block; width:100%; height:auto; min-height:190px; }
+      .league-player-card .lp-history-chart { overflow-x:auto; }
+      .league-player-card .lp-history-chart svg { max-width:none; min-width:100%; }
+      .league-player-card .lp-y-label { transform:translateX(var(--lp-scroll-offset, 0px)); }
       .league-player-card .lp-grid { stroke:rgba(174,181,191,.18); stroke-width:1; stroke-dasharray:4 5; }
       .league-player-card .lp-axis { stroke:rgba(174,181,191,.32); stroke-width:1; }
       .league-player-card .lp-line { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
@@ -337,6 +345,16 @@
     next.dataset.signature = signature;
     if (panel) panel.replaceWith(next);
     else (card.querySelector(".player-history-column") || card.querySelector(".league-card-body") || card).appendChild(next);
+    requestAnimationFrame(() => {
+      const chart = next.querySelector(".lp-history-chart");
+      const range = selectedYearRange();
+      const latest = matches.at(-1)?.gameStart || new Date();
+      const position = 48 + (new Date(latest) - range.start) / (range.end - range.start) * (annualChartWidth() - 60);
+      chart.scrollLeft = position - chart.clientWidth / 2;
+      const updateAxis = () => chart.style.setProperty("--lp-scroll-offset", `${chart.scrollLeft}px`);
+      chart.addEventListener("scroll", updateAxis, { passive: true });
+      updateAxis();
+    });
   }
 
   async function patchAll() {
