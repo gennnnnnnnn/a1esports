@@ -1113,7 +1113,7 @@
       <section class="player-schedule" style="--weeks: ${weeks.length}">
         <div class="player-schedule-head">
           <span>${escapeHtml(yearRange.year)} schedule</span>
-          <strong>${formatNumber(wins)}W-${formatNumber(losses)}L</strong>
+          <strong>${formatNumber(matches.length)} matches · ${formatNumber(wins)}W/${formatNumber(losses)}L (${percentText(matches.length ? wins / matches.length : 0)})</strong>
         </div>
         <div class="player-schedule-scroll">
           <div class="schedule-grid">

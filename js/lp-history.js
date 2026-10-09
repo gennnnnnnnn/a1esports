@@ -281,19 +281,12 @@
   }
 
   function markup(matches, snapshots) {
-    const range = selectedYearRange();
     const counts = { 42: 0, 420: 0, 440: 0 };
     matches.forEach((match) => { if (counts[Number(match.queueId)] !== undefined) counts[Number(match.queueId)] += 1; });
-    const wins = matches.filter((match) => match.result === "Win").length;
-    const losses = matches.length - wins;
-    const winRate = matches.length ? Math.round(wins / matches.length * 100) : 0;
 
     return `
       <section class="ranked-lp-history">
         <div class="lp-history-head">
-          <div>
-            <span>${escapeHtml(`${matches.length} matches · ${wins}W/${losses}L (${winRate}%)`)}</span>
-          </div>
           <div class="lp-history-legend">
             <span><i style="--legend:${QUEUES[420].color}"></i>Solo/Duo (${counts[420]})</span>
             <span><i style="--legend:${QUEUES[440].color}"></i>Flex (${counts[440]})</span>
@@ -312,11 +305,10 @@
     style.textContent = `
       .league-player-card .ranked-history { display:none !important; }
       .league-player-card .ranked-lp-history { margin-top:12px; padding:11px 10px 8px; border:1px solid #454a52; border-radius:4px; background:#111419; overflow:hidden; }
-      .league-player-card .lp-history-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:4px; }
-      .league-player-card .lp-history-head > div:first-child { display:grid; gap:2px; }
+      .league-player-card .lp-history-head { display:flex; justify-content:center; align-items:center; margin-bottom:4px; }
       .league-player-card .lp-history-head strong { color:#f5f7fa; font-size:.82rem; font-weight:950; }
       .league-player-card .lp-history-head span { color:#8f98a6; font-size:.63rem; font-weight:700; }
-      .league-player-card .lp-history-legend { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px 10px; padding-top:2px; }
+      .league-player-card .lp-history-legend { display:flex; flex-wrap:wrap; justify-content:center; width:100%; gap:7px 10px; padding-top:2px; }
       .league-player-card .lp-history-legend span { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
       .league-player-card .lp-history-legend i { width:18px; height:3px; border-radius:4px; background:var(--legend); }
       .league-player-card .lp-history-chart svg { display:block; width:100%; height:auto; min-height:190px; }
