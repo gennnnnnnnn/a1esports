@@ -10,6 +10,58 @@
     <link rel="preconnect" href="https://opgg-static.akamaized.net">
     <link rel="stylesheet" href="css/style.css?v=20260829-2">
     <style>
+      .player-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .player-grid .league-card-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
+        grid-template-areas:
+          "identity identity identity"
+          "ranks radar schedule"
+          "record radar history"
+          "profile profile history";
+        gap: 12px;
+        align-items: start;
+      }
+
+      .player-grid .league-card-body > * {
+        min-width: 0;
+        margin-top: 0;
+      }
+
+      .player-grid .league-id-row { grid-area: identity; }
+      .player-grid .league-ranks { grid-area: ranks; }
+      .player-grid .league-record { grid-area: record; }
+      .player-grid .league-extra { grid-area: profile; }
+      .player-grid .form-radar { grid-area: radar; }
+      .player-grid .player-schedule { grid-area: schedule; }
+      .player-grid .league-card-body > .ranked-lp-history {
+        grid-area: history;
+        margin-top: 0;
+      }
+
+      @media (max-width: 1000px) {
+        .player-grid .league-card-body {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-areas:
+            "identity identity"
+            "ranks radar"
+            "record radar"
+            "profile profile"
+            "schedule schedule"
+            "history history";
+        }
+      }
+
+      @media (max-width: 600px) {
+        .player-grid .league-card-body {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-areas: "identity" "ranks" "record" "radar" "profile" "schedule" "history";
+        }
+      }
+
       .league-player-card .lol-brand > span:last-child,
       .league-player-card .peak-badge {
         display: none !important;
@@ -142,11 +194,6 @@
     </header>
 
     <main class="shell page-stack">
-      <section class="page-kicker">
-        <p class="eyebrow">Roster</p>
-        <h1>Player Form</h1>
-      </section>
-
       <section class="cards-grid player-grid" data-players-list aria-label="Players"></section>
     </main>
 
