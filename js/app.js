@@ -1315,10 +1315,10 @@
     });
 
     const topRoles = [...roleCounts.entries()].sort((a, b) => b[1] - a[1]);
-    const roles = topRoles.map(([role, games]) => ({
+    const roles = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"].map((role) => ({
       key: role,
       label: roleLabel(role),
-      games,
+      games: roleCounts.get(role) || 0,
       active: topRoles.slice(0, 2).some(([topRole]) => topRole === role)
     }));
 
