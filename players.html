@@ -94,9 +94,12 @@
       .player-grid .schedule-months > span:first-child {
         position: sticky;
         left: 0;
-        z-index: 2;
+        z-index: 4;
+        align-self: stretch;
+        display: flex;
+        align-items: center;
         background: #1f2124;
-        box-shadow: 4px 0 #1f2124;
+        box-shadow: 0 0 0 4px #1f2124;
       }
 
       @media (max-width: 600px) {
@@ -263,7 +266,7 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20261009-3"></script>
+    <script src="js/config.example.js?v=20261009-4"></script>
     <script src="js/app.js?v=20261009-6"></script>
     <script>
       (() => {

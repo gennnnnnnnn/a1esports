@@ -321,7 +321,7 @@
       .league-player-card .lp-history-legend i { width:18px; height:3px; border-radius:4px; background:var(--legend); }
       .league-player-card .lp-history-chart svg { display:block; width:100%; height:auto; min-height:190px; }
       .league-player-card .lp-history-layout { display:flex; align-items:flex-start; min-width:0; }
-      .league-player-card .lp-rank-axis { display:block; flex:0 0 48px; width:48px; }
+      .league-player-card .lp-rank-axis { display:block; flex:0 0 48px; width:48px; background:#111419; }
       .league-player-card .lp-history-chart { overflow-x:auto; flex:1; min-width:0; }
       .league-player-card .lp-history-chart svg { max-width:none; min-width:100%; }
       .league-player-card .lp-grid { stroke:rgba(174,181,191,.18); stroke-width:1; stroke-dasharray:4 5; }
