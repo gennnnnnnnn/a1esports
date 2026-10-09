@@ -1122,10 +1122,6 @@
             ${separators}
           </div>
         </div>
-        <div class="schedule-legend">
-          <span>Daily ranked record</span>
-          <span>Numbers show games played; hover for queue split</span>
-        </div>
       </section>
     `;
   }
