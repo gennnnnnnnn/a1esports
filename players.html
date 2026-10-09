@@ -39,6 +39,7 @@
       .player-grid .league-id-row p { margin: 0; }
       .player-grid .league-ranks { grid-area: ranks; }
       .player-grid .queue-title { text-align: center; }
+      .player-grid .rank-main strong { white-space: nowrap; }
       .player-grid .player-form-column { grid-area: form; }
       .player-grid .player-history-column { grid-area: activity; }
       .player-grid .player-form-column,
@@ -286,6 +287,20 @@
           });
         }
 
+        function fitRankLabels(card) {
+          card.querySelectorAll(".rank-main strong").forEach((label) => {
+            label.style.fontSize = "";
+            const size = Number.parseFloat(getComputedStyle(label).fontSize);
+            const panel = label.closest(".rank-main");
+            const style = getComputedStyle(panel);
+            const available = panel.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+            const range = document.createRange();
+            range.selectNodeContents(label);
+            const width = range.getBoundingClientRect().width;
+            if (width > available && available > 0) label.style.fontSize = `${size * available / width}px`;
+          });
+        }
+
         function recentMatches(player) {
           const data = window.RIFT_LAB_DATA || {};
           const matches = window.RIFT_LAB_GET_ACTIVE_MATCHES ? window.RIFT_LAB_GET_ACTIVE_MATCHES() : (data.matches || []);
@@ -435,6 +450,7 @@
             const id = card.querySelector(".league-id-row h3")?.textContent.trim();
             const player = players.find((entry) => riotId(entry) === id || entry.name === id);
             patchRankIcons(card);
+            fitRankLabels(card);
             if (!player) return;
             const matches = recentMatches(player);
             patchRecentRecord(card, matches);
@@ -456,6 +472,8 @@
           new MutationObserver(queueUpgrade).observe(document.body, { childList: true, subtree: true });
           [0, 250, 1000].forEach((delay) => setTimeout(upgradeCards, delay));
           window.addEventListener("rift-lab-season-change", queueUpgrade);
+          window.addEventListener("resize", queueUpgrade);
+          document.fonts.ready.then(queueUpgrade);
         });
       })();
     </script>
