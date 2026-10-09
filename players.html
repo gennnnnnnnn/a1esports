@@ -30,6 +30,13 @@
       }
 
       .player-grid .league-id-row { grid-area: identity; }
+      .player-grid .league-id-row > div:first-child {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 10px;
+      }
+      .player-grid .league-id-row p { margin: 0; }
       .player-grid .league-ranks { grid-area: ranks; }
       .player-grid .player-form-column { grid-area: form; }
       .player-grid .player-history-column { grid-area: activity; }
