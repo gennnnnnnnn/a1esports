@@ -147,7 +147,7 @@ window.RIFT_LAB_CONFIG = {
 
 if (document.body?.dataset.page === "players") {
   const script = document.createElement("script");
-  script.src = "js/lp-history.js?v=20261009-2";
+  script.src = "js/lp-history.js?v=20261009-3";
   script.async = false;
   document.head.appendChild(script);
 }

@@ -200,20 +200,24 @@
     return Math.round((range.end - range.start) / 86400000) * 10 + 60;
   }
 
+  function plotLayout(plot, labels, height) {
+    return `<div class="lp-history-layout"><svg class="lp-rank-axis" viewBox="0 0 48 ${height}" style="height:${height}px" role="img" aria-label="Rank scale">${labels}</svg><div class="lp-history-chart" tabindex="0" role="region" aria-label="Scrollable annual LP graph">${plot}</div></div>`;
+  }
+
   function timelineOnlySvg(rows) {
     const width = annualChartWidth();
     const height = 92;
-    const left = 18;
+    const left = 0;
     const right = 12;
     const axis = annualAxis(left, width - right, 30, 59);
-    return `<svg viewBox="0 0 ${width} ${height}" style="width:${width}px;height:${height}px" role="img" aria-label="Annual ranked match timeline">${axis.markup}</svg>`;
+    return plotLayout(`<svg viewBox="0 0 ${width} ${height}" style="width:${width}px;height:${height}px" role="img" aria-label="Annual ranked match timeline">${axis.markup}</svg>`, "", height);
   }
 
   function historySvg(matches, snapshots) {
     const rows = buildRows(matches, snapshots);
     const width = annualChartWidth();
     const height = 250;
-    const left = 48;
+    const left = 0;
     const right = 12;
     const top = 16;
     const bottom = 42;
@@ -234,8 +238,8 @@
 
     const grid = yTicks.map((tick) => `
       <line class="lp-grid" x1="${left}" y1="${y(tick).toFixed(1)}" x2="${width - right}" y2="${y(tick).toFixed(1)}"></line>
-      <text class="lp-y-label" x="${left - 7}" y="${(y(tick) + 3).toFixed(1)}" text-anchor="end">${escapeHtml(scoreLabel(tick))}</text>
     `).join("");
+    const labels = yTicks.map((tick) => `<text class="lp-y-label" x="41" y="${(y(tick) + 3).toFixed(1)}" text-anchor="end">${escapeHtml(scoreLabel(tick))}</text>`).join("");
 
 
     const drawSeries = (field, queueId) => {
@@ -264,7 +268,7 @@
       return `${lines}${dots}`;
     };
 
-    return `
+    const plot = `
       <svg viewBox="0 0 ${width} ${height}" style="width:${width}px;height:${height}px" role="img" aria-label="Annual ranked LP history for ${selectedYearRange().year}">
         ${grid}
         ${axis.markup}
@@ -273,6 +277,7 @@
         ${drawSeries("team", 42)}
       </svg>
     `;
+    return plotLayout(plot, labels, height);
   }
 
   function markup(matches, snapshots) {
@@ -295,7 +300,7 @@
             <span><i style="--legend:${QUEUES[42].color}"></i>Ranked Team 5v5 (${counts[42]})</span>
           </div>
         </div>
-        <div class="lp-history-chart" tabindex="0" role="region" aria-label="Scrollable annual LP graph">${historySvg(matches, snapshots)}</div>
+        ${historySvg(matches, snapshots)}
       </section>
     `;
   }
@@ -315,9 +320,10 @@
       .league-player-card .lp-history-legend span { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
       .league-player-card .lp-history-legend i { width:18px; height:3px; border-radius:4px; background:var(--legend); }
       .league-player-card .lp-history-chart svg { display:block; width:100%; height:auto; min-height:190px; }
-      .league-player-card .lp-history-chart { overflow-x:auto; }
+      .league-player-card .lp-history-layout { display:flex; align-items:flex-start; min-width:0; }
+      .league-player-card .lp-rank-axis { display:block; flex:0 0 48px; width:48px; }
+      .league-player-card .lp-history-chart { overflow-x:auto; flex:1; min-width:0; }
       .league-player-card .lp-history-chart svg { max-width:none; min-width:100%; }
-      .league-player-card .lp-y-label { transform:translateX(var(--lp-scroll-offset, 0px)); }
       .league-player-card .lp-grid { stroke:rgba(174,181,191,.18); stroke-width:1; stroke-dasharray:4 5; }
       .league-player-card .lp-axis { stroke:rgba(174,181,191,.32); stroke-width:1; }
       .league-player-card .lp-line { fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
@@ -349,11 +355,8 @@
       const chart = next.querySelector(".lp-history-chart");
       const range = selectedYearRange();
       const latest = matches.at(-1)?.gameStart || new Date();
-      const position = 48 + (new Date(latest) - range.start) / (range.end - range.start) * (annualChartWidth() - 60);
+      const position = (new Date(latest) - range.start) / (range.end - range.start) * (annualChartWidth() - 12);
       chart.scrollLeft = position - chart.clientWidth / 2;
-      const updateAxis = () => chart.style.setProperty("--lp-scroll-offset", `${chart.scrollLeft}px`);
-      chart.addEventListener("scroll", updateAxis, { passive: true });
-      updateAxis();
     });
   }
 

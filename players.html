@@ -90,6 +90,15 @@
         scrollbar-width: thin;
       }
 
+      .player-grid .schedule-day-label,
+      .player-grid .schedule-months > span:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: #1f2124;
+        box-shadow: 4px 0 #1f2124;
+      }
+
       @media (max-width: 600px) {
         .player-grid .league-id-row { flex-wrap: wrap; }
         .player-grid .league-id-row > div:first-child { width: 100%; }
@@ -254,7 +263,7 @@
       <span data-updated-at>Waiting for sync</span>
     </footer>
 
-    <script src="js/config.example.js?v=20261009-2"></script>
+    <script src="js/config.example.js?v=20261009-3"></script>
     <script src="js/app.js?v=20261009-6"></script>
     <script>
       (() => {
