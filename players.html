@@ -367,13 +367,17 @@
         }
 
         function patchRecentRecord(card, matches) {
-          if (!matches.length) return;
           const wins = matches.filter((match) => match.result === "Win").length;
           const losses = matches.length - wins;
           const record = card.querySelector(".league-record");
           if (!record) return;
-          const percent = `${Math.round((wins / matches.length) * 100)}%`;
-          const text = `W/L (${wins}/${losses})`;
+          const percent = matches.length ? `${Math.round((wins / matches.length) * 100)}%` : "—";
+          const queueRecord = (queueId, label) => {
+            const games = matches.filter((match) => Number(match.queueId) === queueId);
+            const queueWins = games.filter((match) => match.result === "Win").length;
+            return `${label} ${queueWins}W/${games.length - queueWins}L`;
+          };
+          const text = `${queueRecord(420, "Solo/Duo")} · ${queueRecord(440, "Flex")}`;
           if (record.querySelector("strong").textContent !== percent) record.querySelector("strong").textContent = percent;
           if (record.querySelector("span").textContent !== text) record.querySelector("span").textContent = text;
           record.title = `Last ${matches.length} ranked games`;
@@ -470,7 +474,7 @@
           if (!radar) {
             radar = document.createElement("div");
             radar.className = "form-radar";
-            card.querySelector(".league-record")?.after(radar);
+            card.querySelector(".league-record")?.before(radar);
           }
           const signature = matches.map((match) => match.matchId || match.gameStart).join("|");
           if (radar.dataset.signature === signature) return;
