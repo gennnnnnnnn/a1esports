@@ -1022,7 +1022,7 @@
 
           <div class="league-ranks ${showSolo && showFlex ? "" : "single"}">
             ${showSolo ? leagueRankPanel("Solo/Duo", player, "solo") : ""}
-            ${showFlex ? leagueRankPanel("Ranked Flex", player, "flex") : ""}
+            ${showFlex ? leagueRankPanel("Flex", player, "flex") : ""}
           </div>
 
           <div class="player-form-column">
