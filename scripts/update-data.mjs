@@ -523,6 +523,11 @@ function buildLatestNotes(players, matches) {
 }
 
 async function loadExistingData() {
+  if (process.env.BASELINE_DATA_PATH) {
+    const data = JSON.parse(await readFile(process.env.BASELINE_DATA_PATH, "utf8"));
+    console.log(`Loaded ${data.matches.length} matches from durable snapshot storage`);
+    return data;
+  }
   try {
     const response = await fetch(EXISTING_DATA_URL, {
       headers: {

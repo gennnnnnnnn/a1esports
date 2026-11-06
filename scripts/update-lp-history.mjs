@@ -37,6 +37,9 @@ function rankScore(tier, rank, lp) {
 }
 
 async function loadExisting() {
+  if (process.env.BASELINE_DATA_PATH) {
+    return JSON.parse(await readFile(process.env.BASELINE_DATA_PATH, "utf8"));
+  }
   try {
     const separator = EXISTING_DATA_URL.includes("?") ? "&" : "?";
     const response = await fetch(`${EXISTING_DATA_URL}${separator}lpHistory=${Date.now()}`, {
