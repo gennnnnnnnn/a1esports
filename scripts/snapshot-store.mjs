@@ -28,7 +28,7 @@ if (process.argv[2] === "load") {
   let parent = "";
   let data;
   if (refs) {
-    git(["fetch", "--no-tags", "origin", `refs/heads/${branch}:${remoteRef}`]);
+    git(["fetch", "--depth=1", "--no-tags", "origin", `refs/heads/${branch}:${remoteRef}`]);
     parent = git(["rev-parse", remoteRef]);
     data = validate(JSON.parse(git(["show", `${parent}:data/rift-lab.json`])));
   } else {
