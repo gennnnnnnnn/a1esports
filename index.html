@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="rift-lab-api" content="data/rift-lab.json">
+    <title>Rift Lab | A1 eSports</title>
+    <link rel="stylesheet" href="css/style.css?v=20260829-2">
+    <style>
+      .team-hero {
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
+      }
+
+      .team-hero-card,
+      .team-chart-card {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 18% 0%, rgba(49, 215, 255, 0.13), transparent 18rem),
+          radial-gradient(circle at 100% 10%, rgba(242, 193, 91, 0.11), transparent 15rem),
+          rgba(18, 22, 32, 0.86);
+        box-shadow: var(--shadow);
+      }
+
+      .team-hero-card {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        align-content: stretch;
+        align-items: stretch;
+        gap: 18px;
+        min-height: 500px;
+        padding: 22px;
+      }
+
+      .team-hero-summary {
+        display: grid;
+        align-content: center;
+        min-height: 0;
+      }
+
+      .season-control {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin: 18px 0;
+      }
+
+      .hero-season-control {
+        justify-self: start;
+        margin: 0;
+      }
+
+      .season-control label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .season-control select {
+        min-height: 38px;
+        min-width: 220px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(18, 22, 32, 0.82);
+        color: var(--text);
+        font-weight: 800;
+      }
+
+      .team-scoreboard {
+        display: grid;
+        gap: 12px;
+      }
+
+      .team-score-main {
+        padding: 18px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        background: rgba(7, 8, 12, 0.52);
+      }
+
+      .team-score-main span,
+      .team-score-item span,
+      .team-chart-card span.chart-kicker {
+        display: block;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .team-score-main strong {
+        display: block;
+        margin-top: 6px;
+        font-size: clamp(2.4rem, 5vw, 4.1rem);
+        line-height: 1;
+      }
+
+      .team-score-main small,
+      .team-score-item small {
+        display: block;
+        margin-top: 7px;
+        color: var(--muted);
+      }
+
+      .team-score-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .team-score-item {
+        min-height: 92px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .team-score-item strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.35rem;
+      }
+
+      .team-dashboard-section {
+        margin: 10px auto 56px;
+      }
+
+      .team-dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .team-chart-card {
+        min-width: 0;
+        padding: 16px;
+      }
+
+      .team-chart-card h3 {
+        margin-top: 6px;
+        font-size: 1.05rem;
+      }
+
+      .team-chart-card p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .team-chart-card svg {
+        display: block;
+        width: 100%;
+        min-height: 220px;
+        margin-top: 12px;
+      }
+
+      .chart-grid-line,
+      .chart-axis-line,
+      .radar-grid,
+      .radar-axis {
+        fill: none;
+        stroke: rgba(174, 181, 191, 0.28);
+        stroke-width: 1;
+      }
+
+      .chart-line {
+        fill: none;
+        stroke: rgba(91, 242, 168, 0.95);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .chart-average-line {
+        stroke: rgba(242, 193, 91, 0.72);
+        stroke-width: 1.5;
+        stroke-dasharray: 6 5;
+      }
+
+      .chart-average-label {
+        fill: #f2c15b;
+        font-size: 9px;
+        font-weight: 850;
+      }
+
+      .chart-fill {
+        fill: rgba(49, 215, 255, 0.14);
+      }
+
+      .chart-dot {
+        fill: #5bf2a8;
+        stroke: #081016;
+        stroke-width: 2;
+      }
+
+      .chart-label,
+      .radar-label {
+        fill: #aeb5bf;
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .radar-value-label {
+        fill: #f4f7fb;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .radar-area {
+        fill: rgba(49, 215, 255, 0.23);
+        stroke: rgba(91, 242, 168, 0.95);
+        stroke-width: 2.5;
+      }
+
+      .team-bars {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .team-bar-row {
+        display: grid;
+        grid-template-columns: minmax(126px, max-content) minmax(0, 1fr) max-content;
+        gap: 10px;
+        align-items: center;
+        color: #c6d0df;
+        font-size: 0.88rem;
+      }
+
+      .team-bar-row strong,
+      .team-bar-row > span:last-child {
+        white-space: nowrap;
+      }
+
+      .team-bar-row > span:last-child {
+        text-align: right;
+      }
+
+      .team-bar-track {
+        height: 13px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .team-bar-fill {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, rgba(49, 215, 255, 0.95), rgba(91, 242, 168, 0.85));
+      }
+
+      .team-table {
+        width: 100%;
+        margin-top: 12px;
+        border-collapse: collapse;
+        color: #c6d0df;
+        font-size: 0.84rem;
+      }
+
+      .team-table th,
+      .team-table td {
+        padding: 8px 7px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: left;
+      }
+
+      .team-table th {
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .team-metrics {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+
+      @media (max-width: 980px) {
+        .team-hero,
+        .team-dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .team-hero-card {
+          min-height: 360px;
+        }
+
+        .team-metrics {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 700px) {
+        .team-score-grid,
+        .team-metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .team-bar-row {
+          grid-template-columns: minmax(118px, max-content) minmax(0, 1fr) max-content;
+        }
+      }
+
+      @media (max-width: 430px) {
+        .team-score-grid,
+        .team-metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body data-page="home">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Rift Lab home">
+        <span class="brand-mark">A1</span>
+        <span>
+          <strong>Rift Lab</strong>
+          <small>A1 eSports</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="index.html" data-nav="home">Home</a>
+        <a href="players.html" data-nav="players">Players</a>
+        <a href="coach.html" data-nav="coach">Analysis</a>
+      </nav>
+      <div class="season-countdown" data-season-countdown>Season countdown loading</div>
+      <label class="header-season-control">
+        <span>Season</span>
+        <select data-global-season-select>
+          <option>Loading seasons</option>
+        </select>
+      </label>
+    </header>
+
+    <main>
+      <section class="hero shell team-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">VN2 ranked squad analytics</p>
+          <h1>A1 eSports Rift Lab</h1>
+          <p class="hero-lede">Team statistics follow Riot's 2026 ranked seasons. Season 3 started July 29 at noon GMT+7.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="coach.html">Open Analysis Board</a>
+          </div>
+        </div>
+        <aside class="team-hero-card" aria-label="Team seasonal performance summary">
+          <div class="team-hero-summary" data-team-hero>
+            <div class="team-scoreboard">
+              <div class="team-score-main">
+                <span>Season win rate</span>
+                <strong>Loading</strong>
+                <small>Waiting for ranked data</small>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="shell metrics-grid team-metrics" data-home-metrics aria-label="Team seasonal metrics"></section>
+
+      <section class="shell team-dashboard-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Season dashboard</p>
+            <h2>Squad Performance</h2>
+          </div>
+        </div>
+        <div class="team-dashboard-grid" data-team-dashboard aria-label="Seasonal team charts"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer shell">
+      <span>Rift Lab pulls public dashboard data from GitHub Actions.</span>
+      <span data-updated-at>Waiting for sync</span>
+    </footer>
+
+    <script src="js/config.example.js?v=20261009-6"></script>
+    <script src="js/app.js?v=20261009-8"></script>
+    <script>
+      (() => {
+        const SEASON_STORAGE_KEY = "riftLabSeasonKey";
+        let lastSignature = "";
+        let selectedSeasonKey = "";
+
+        function escapeHtml(value) {
+          return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function num(value) {
+          const parsed = Number(value);
+          return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function safeStorageGet(key) {
+          try {
+            const stored = window.localStorage ? window.localStorage.getItem(key) : "";
+            if (!stored) return "";
+            const selection = JSON.parse(stored);
+            return selection && typeof selection === "object" ? String(selection.key || "") : String(stored);
+          } catch (error) {
+            return "";
+          }
+        }
+
+        function pct(value) {
+          return `${Math.round(num(value))}%`;
+        }
+
+        function fmt(value, digits = 1) {
+          return num(value).toFixed(digits).replace(/\.0+$/, "");
+        }
+
+        function avg(rows, field) {
+          return rows.length ? rows.reduce((sum, row) => sum + num(row[field]), 0) / rows.length : 0;
+        }
+
+        function stat(rows) {
+          const wins = rows.filter((row) => row.result === "Win").length;
+          const losses = rows.length - wins;
+          return { games: rows.length, wins, losses, wr: rows.length ? (wins / rows.length) * 100 : 0 };
+        }
+
+        function uniqueMatches(rows) {
+          const byId = new Map();
+          const withoutId = [];
+          rows.forEach((row) => {
+            const matchId = String(row.matchId || "").trim();
+            if (!matchId) {
+              withoutId.push(row);
+            } else if (!byId.has(matchId)) {
+              byId.set(matchId, row);
+            }
+          });
+          return [...byId.values(), ...withoutId];
+        }
+
+        function seasonOf(dateLike) {
+          const date = new Date(dateLike);
+          const safe = Number.isNaN(date.getTime()) ? new Date() : date;
+          const year = safe.getUTCFullYear();
+          const official2026 = year === 2026 ? [
+            { block: 1, start: new Date(Date.UTC(2026, 0, 1)), end: new Date(Date.UTC(2026, 3, 29, 5)), range: "Jan 8-Apr 28" },
+            { block: 2, start: new Date(Date.UTC(2026, 3, 29, 5)), end: new Date(Date.UTC(2026, 6, 29, 5)), range: "Apr 29-Jul 28" },
+            { block: 3, start: new Date(Date.UTC(2026, 6, 29, 5)), end: new Date(Date.UTC(2027, 0, 1)), range: "Jul 29 onward" }
+          ].find((season) => safe >= season.start && safe < season.end) : null;
+
+          if (official2026) {
+            return {
+              key: `${year}-S${official2026.block}`,
+              label: `${year} Season ${official2026.block}`,
+              range: official2026.range,
+              start: official2026.start,
+              end: official2026.end
+            };
+          }
+
+          const block = Math.floor(safe.getUTCMonth() / 4) + 1;
+          const startMonth = (block - 1) * 4;
+          const endMonth = startMonth + 3;
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const start = new Date(Date.UTC(year, startMonth, 1, 0, 0, 0));
+          const end = new Date(Date.UTC(year, endMonth + 1, 1, 0, 0, 0));
+          return {
+            key: `${year}-S${block}`,
+            label: `${year} Season ${block}`,
+            range: `${monthNames[startMonth]}-${monthNames[endMonth]}`,
+            start,
+            end
+          };
+        }
+
+        function latestMatches(data) {
+          return [...(data.matches || [])]
+            .filter((match) => match && match.gameStart)
+            .sort((a, b) => new Date(b.gameStart).getTime() - new Date(a.gameStart).getTime());
+        }
+
+        function seasonsFrom(matches) {
+          const byKey = new Map();
+          matches.forEach((match) => {
+            const season = seasonOf(match.gameStart);
+            if (!byKey.has(season.key)) byKey.set(season.key, season);
+          });
+          if (!byKey.size) {
+            const fallback = seasonOf(new Date());
+            byKey.set(fallback.key, fallback);
+          }
+          return [...byKey.values()].sort((a, b) => b.start - a.start);
+        }
+
+        function matchesForSeason(matches, season) {
+          return matches.filter((match) => {
+            const date = new Date(match.gameStart);
+            return !Number.isNaN(date.getTime()) && date >= season.start && date < season.end;
+          });
+        }
+
+        function queueLabel(queueId) {
+          if (Number(queueId) === 420) return "Solo/Duo";
+          if (Number(queueId) === 440) return "Flex";
+          return "Other";
+        }
+
+        function roleLabel(role) {
+          const value = String(role || "").toLowerCase();
+          if (value.includes("top")) return "Top";
+          if (value.includes("jung")) return "Jungle";
+          if (value.includes("mid")) return "Mid";
+          if (value.includes("bot") || value.includes("bottom") || value.includes("adc")) return "Bot";
+          if (value.includes("util") || value.includes("sup")) return "Support";
+          return "Unknown";
+        }
+
+        function groupBy(rows, mapper) {
+          const map = new Map();
+          rows.forEach((row) => {
+            const label = mapper(row);
+            if (!label) return;
+            if (!map.has(label)) map.set(label, []);
+            map.get(label).push(row);
+          });
+          return [...map.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+        }
+
+        function metricCard(label, value, hint) {
+          return `
+            <article class="metric-card">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+              <small>${escapeHtml(hint)}</small>
+            </article>
+          `;
+        }
+
+        function renderSeasonSelect(seasons) {
+          const currentValue = selectedSeasonKey ||
+            window.RIFT_LAB_SELECTED_SEASON ||
+            safeStorageGet(SEASON_STORAGE_KEY) ||
+            seasons[0]?.key ||
+            "";
+          selectedSeasonKey = seasons.some((season) => season.key === currentValue) ? currentValue : seasons[0]?.key || "";
+          return seasons.find((season) => season.key === selectedSeasonKey) || seasons[0];
+        }
+
+        function renderMetrics(matches) {
+          const node = document.querySelector("[data-home-metrics]");
+          if (!node) return;
+          const games = uniqueMatches(matches);
+          const s = stat(games);
+          const solo = stat(games.filter((match) => Number(match.queueId) === 420));
+          const flex = stat(games.filter((match) => Number(match.queueId) === 440));
+          node.innerHTML = [
+            metricCard("Season Games", String(s.games), "Deduplicated by match ID"),
+            metricCard("Season Win Rate", pct(s.wr), `${s.wins}W-${s.losses}L`),
+            metricCard("Solo/Duo", pct(solo.wr), `${solo.wins}W-${solo.losses}L`),
+            metricCard("Flex", pct(flex.wr), `${flex.wins}W-${flex.losses}L`),
+            metricCard("Avg KDA", fmt(avg(matches, "kda"), 2), "Season combat conversion"),
+            metricCard("Avg Vision/min", fmt(avg(matches, "visionMin"), 2), "Season objective setup")
+          ].join("");
+        }
+
+        function renderHero(season, matches) {
+          const node = document.querySelector("[data-team-hero]");
+          if (!node) return;
+          const s = stat(uniqueMatches(matches));
+          const roles = groupBy(matches, (match) => roleLabel(match.role));
+          const queues = groupBy(matches, (match) => queueLabel(match.queueId));
+          const topRole = roles[0] ? `${roles[0][0]} (${roles[0][1].length})` : "No role data";
+          const topQueue = queues[0] ? `${queues[0][0]} (${queues[0][1].length})` : "No queue data";
+          node.innerHTML = `
+            <div class="team-scoreboard">
+              <div class="team-score-main">
+                <span>${escapeHtml(`${season.label} · ${season.range}`)}</span>
+                <strong>${escapeHtml(pct(s.wr))}</strong>
+                <small>${escapeHtml(`${s.wins}W-${s.losses}L across ${s.games} unique matches`)}</small>
+              </div>
+              <div class="team-score-grid">
+                <div class="team-score-item"><span>Avg KDA</span><strong>${escapeHtml(fmt(avg(matches, "kda"), 2))}</strong><small>season average</small></div>
+                <div class="team-score-item"><span>Damage/min</span><strong>${escapeHtml(String(Math.round(avg(matches, "damageMin"))))}</strong><small>season output</small></div>
+                <div class="team-score-item"><span>Main role sample</span><strong>${escapeHtml(topRole)}</strong><small>by season games</small></div>
+                <div class="team-score-item"><span>Main queue sample</span><strong>${escapeHtml(topQueue)}</strong><small>by season games</small></div>
+              </div>
+            </div>
+          `;
+        }
+
+        function weekStart(dateLike) {
+          const date = new Date(dateLike);
+          if (Number.isNaN(date.getTime())) return null;
+          const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+          start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+          return start;
+        }
+
+        function shortDate(dateLike) {
+          const date = new Date(dateLike);
+          return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(date);
+        }
+
+        function weeklyWinRateChart(matches) {
+          if (!matches.length) return '<p>No match data available for this season yet.</p>';
+          const games = uniqueMatches(matches);
+          const grouped = new Map();
+          games.forEach((match) => {
+            const start = weekStart(match.gameStart);
+            if (!start) return;
+            const key = start.toISOString();
+            if (!grouped.has(key)) grouped.set(key, { start, rows: [] });
+            grouped.get(key).rows.push(match);
+          });
+          const weeks = [...grouped.values()].sort((a, b) => a.start - b.start);
+          if (!weeks.length) return '<p>No dated match data available for this season yet.</p>';
+          const points = weeks.map((week) => stat(week.rows).wr);
+          const width = 420;
+          const height = 220;
+          const left = 36;
+          const right = 16;
+          const top = 18;
+          const bottom = 34;
+          const usableW = width - left - right;
+          const usableH = height - top - bottom;
+          const xy = (value, index) => {
+            const x = left + (points.length === 1 ? usableW / 2 : (index / (points.length - 1)) * usableW);
+            const y = top + (1 - value / 100) * usableH;
+            return [x, y];
+          };
+          const polyline = points.map((value, index) => xy(value, index).join(",")).join(" ");
+          const area = `${left},${height - bottom} ${polyline} ${left + usableW},${height - bottom}`;
+          const dots = points.map((value, index) => {
+            const [x, y] = xy(value, index);
+            const s = stat(weeks[index].rows);
+            return `<circle class="chart-dot" cx="${x}" cy="${y}" r="4"><title>Week of ${shortDate(weeks[index].start)}: ${Math.round(value)}% - ${s.wins}W-${s.losses}L (${s.games} games)</title></circle>`;
+          }).join("");
+          const grid = [0, 25, 50, 75, 100].map((value) => {
+            const y = top + (1 - value / 100) * usableH;
+            return `<line class="chart-grid-line" x1="${left}" y1="${y}" x2="${left + usableW}" y2="${y}" /><text class="chart-label" x="4" y="${y + 4}">${value}%</text>`;
+          }).join("");
+          const seasonAverage = stat(games).wr;
+          const averageY = top + (1 - seasonAverage / 100) * usableH;
+          const dateLabels = weeks.length === 1
+            ? `<text class="chart-label" x="${left + usableW / 2}" y="${height - 8}" text-anchor="middle">Week of ${shortDate(weeks[0].start)}</text>`
+            : `<text class="chart-label" x="${left}" y="${height - 8}">${shortDate(weeks[0].start)}</text><text class="chart-label" x="${left + usableW}" y="${height - 8}" text-anchor="end">${shortDate(weeks[weeks.length - 1].start)}</text>`;
+          return `
+            <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weekly season win-rate trend">
+              ${grid}
+              <line class="chart-axis-line" x1="${left}" y1="${height - bottom}" x2="${left + usableW}" y2="${height - bottom}" />
+              <line class="chart-average-line" x1="${left}" y1="${averageY}" x2="${left + usableW}" y2="${averageY}" />
+              <text class="chart-average-label" x="${left + usableW - 2}" y="${averageY - 5}" text-anchor="end">Season ${Math.round(seasonAverage)}%</text>
+              <polygon class="chart-fill" points="${area}" />
+              <polyline class="chart-line" points="${polyline}" />
+              ${dots}
+              ${dateLabels}
+            </svg>
+          `;
+        }
+
+        function avgAvailable(rows, field) {
+          const values = rows
+            .filter((row) => Number(row.matchStatVersion) >= 2)
+            .map((row) => Number(row[field]))
+            .filter((value) => Number.isFinite(value));
+          return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+        }
+
+        function radarChart(matches) {
+          if (!matches.length) return '<p>No match data available for this season yet.</p>';
+          const s = stat(uniqueMatches(matches));
+          const kp = avgAvailable(matches, "killParticipation");
+          const damageShare = avgAvailable(matches, "damageShare");
+          const values = [
+            { id: "wr", label: "WR", value: pct(s.wr), score: Math.min(1, s.wr / 100) },
+            { id: "kp", label: "KP%", value: kp === null ? "-" : pct(kp), score: Math.min(1, (kp || 0) / 75) },
+            { id: "kda", label: "KDA", value: fmt(avg(matches, "kda"), 2), score: Math.min(1, avg(matches, "kda") / 5) },
+            { id: "csm", label: "CS/M", value: fmt(avg(matches, "csMin"), 1), score: Math.min(1, avg(matches, "csMin") / 8) },
+            { id: "gpm", label: "GPM", value: String(Math.round(avg(matches, "goldMin"))), score: Math.min(1, avg(matches, "goldMin") / 500) },
+            { id: "dmgm", label: "DMG/M", value: String(Math.round(avg(matches, "damageMin"))), score: Math.min(1, avg(matches, "damageMin") / 1000) },
+            { id: "dmgp", label: "DMG%", value: damageShare === null ? "-" : pct(damageShare), score: Math.min(1, (damageShare || 0) / 35) },
+            { id: "vism", label: "VSPM", value: fmt(avg(matches, "visionMin"), 2), score: Math.min(1, avg(matches, "visionMin") / 1.3) }
+          ];
+          const cx = 210;
+          const cy = 124;
+          const r = 78;
+          const point = (ratio, index) => {
+            const angle = -Math.PI / 2 + (index * 2 * Math.PI) / values.length;
+            return [cx + Math.cos(angle) * r * ratio, cy + Math.sin(angle) * r * ratio];
+          };
+          const positions = {
+            wr: { x: 210, y: 18, anchor: "middle" },
+            kp: { x: 310, y: 48, anchor: "start" },
+            kda: { x: 338, y: 124, anchor: "start" },
+            csm: { x: 306, y: 206, anchor: "start" },
+            gpm: { x: 210, y: 226, anchor: "middle" },
+            dmgm: { x: 114, y: 206, anchor: "end" },
+            dmgp: { x: 82, y: 124, anchor: "end" },
+            vism: { x: 110, y: 48, anchor: "end" }
+          };
+          const polygon = values.map((metric, index) => point(Math.max(0.08, metric.score), index).join(",")).join(" ");
+          const grid = [0.33, 0.66, 1].map((ratio) => `<polygon class="radar-grid" points="${values.map((_, index) => point(ratio, index).join(",")).join(" ")}" />`).join("");
+          const axes = values.map((_, index) => `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${point(1, index)[0]}" y2="${point(1, index)[1]}" />`).join("");
+          const labels = values.map((metric) => {
+            const pos = positions[metric.id];
+            return `<text class="radar-label" x="${pos.x}" y="${pos.y}" text-anchor="${pos.anchor}">${metric.label}</text><text class="radar-value-label" x="${pos.x}" y="${pos.y + 13}" text-anchor="${pos.anchor}">${metric.value}</text>`;
+          }).join("");
+          return `<svg viewBox="0 0 420 250" role="img" aria-label="Season team performance radar">${grid}${axes}<polygon class="radar-area" points="${polygon}" />${labels}</svg>`;
+        }
+
+        function bars(groups, labeler) {
+          if (!groups.length) return '<p>No grouped match data for this season yet.</p>';
+          const maxGames = Math.max(...groups.map(([, rows]) => rows.length), 1);
+          return `<div class="team-bars">${groups.map(([label, rows]) => {
+            const s = stat(rows);
+            const width = Math.max(6, (rows.length / maxGames) * 100);
+            return `
+              <div class="team-bar-row">
+                <strong>${escapeHtml(label)}</strong>
+                <span class="team-bar-track"><span class="team-bar-fill" style="width: ${width}%"></span></span>
+                <span>${escapeHtml(labeler ? labeler(rows, s) : `${rows.length} games`)}</span>
+              </div>
+            `;
+          }).join("")}</div>`;
+        }
+
+        function table(matches) {
+          const recent = matches.slice(0, 10);
+          if (!recent.length) return '<p>No seasonal ranked matches imported yet.</p>';
+          return `
+            <table class="team-table">
+              <thead><tr><th>Queue</th><th>Role</th><th>Result</th><th>KDA</th><th>CS/m</th><th>Vis/m</th><th>Dmg/m</th></tr></thead>
+              <tbody>
+                ${recent.map((match) => `
+                  <tr>
+                    <td>${escapeHtml(queueLabel(match.queueId))}</td>
+                    <td>${escapeHtml(roleLabel(match.role))}</td>
+                    <td>${escapeHtml(match.result || "-")}</td>
+                    <td>${escapeHtml(`${num(match.kills)}/${num(match.deaths)}/${num(match.assists)} · ${fmt(match.kda, 2)}`)}</td>
+                    <td>${escapeHtml(fmt(match.csMin, 1))}</td>
+                    <td>${escapeHtml(fmt(match.visionMin, 2))}</td>
+                    <td>${escapeHtml(String(Math.round(num(match.damageMin))))}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
+
+        function seasonComparison(allMatches) {
+          const seasons = seasonsFrom(allMatches);
+          const groups = seasons.map((season) => [season.label, uniqueMatches(matchesForSeason(allMatches, season))]);
+          return bars(groups, (rows, s) => `${pct(s.wr)} - ${rows.length} games`);
+        }
+
+        function renderCharts(season, matches, allMatches) {
+          const node = document.querySelector("[data-team-dashboard]");
+          if (!node) return;
+          const queues = groupBy(uniqueMatches(matches), (match) => queueLabel(match.queueId));
+          const roles = groupBy(matches, (match) => roleLabel(match.role));
+          node.innerHTML = `
+            <article class="team-chart-card">
+              <span class="chart-kicker">${escapeHtml(season.label)}</span>
+              <h3>Weekly Win Rate</h3>
+              <p>Weekly unique-match record inside the selected season, with the season average shown as a dashed line.</p>
+              ${weeklyWinRateChart(matches)}
+            </article>
+            <article class="team-chart-card">
+              <span class="chart-kicker">${escapeHtml(season.range)}</span>
+              <h3>Season Performance Radar</h3>
+              <p>Season profile using the same eight metrics as Players: WR, KP%, KDA, CS/M, GPM, DMG/M, DMG%, and VSPM.</p>
+              ${radarChart(matches)}
+            </article>
+            <article class="team-chart-card">
+              <span class="chart-kicker">Queue balance</span>
+              <h3>Solo/Duo vs Flex</h3>
+              <p>Season game volume by queue, with win rate printed on the right.</p>
+              ${bars(queues, (rows, s) => `${pct(s.wr)} · ${rows.length}`)}
+            </article>
+            <article class="team-chart-card">
+              <span class="chart-kicker">Role sample</span>
+              <h3>Role Distribution</h3>
+              <p>Where the selected season sample is coming from.</p>
+              ${bars(roles, (rows, s) => `${pct(s.wr)} · ${rows.length}`)}
+            </article>
+            <article class="team-chart-card" style="grid-column: 1 / -1;">
+              <span class="chart-kicker">Season comparison</span>
+              <h3>Available Seasons</h3>
+              <p>Unique match IDs by season. One calendar year is split into Jan-Apr, May-Aug, and Sep-Dec.</p>
+              ${seasonComparison(allMatches)}
+            </article>
+          `;
+        }
+
+        function render() {
+          const data = window.RIFT_LAB_DATA;
+          if (!data) return;
+          const allMatches = latestMatches(data);
+          const seasons = seasonsFrom(allMatches);
+          const season = renderSeasonSelect(seasons);
+          const matches = matchesForSeason(allMatches, season);
+          const signature = `${season.key}|${allMatches.length}|${allMatches[0]?.matchId || ""}|${allMatches[0]?.gameStart || ""}`;
+          if (signature === lastSignature) return;
+          lastSignature = signature;
+          renderHero(season, matches);
+          renderMetrics(matches);
+          renderCharts(season, matches, allMatches);
+        }
+
+        function boot() {
+          window.addEventListener("rift-lab-season-change", (event) => {
+            selectedSeasonKey = event.detail?.season?.key || window.RIFT_LAB_SELECTED_SEASON || "";
+            lastSignature = "";
+            render();
+          });
+          [0, 250, 750, 1500].forEach((delay) => setTimeout(render, delay));
+          new MutationObserver(() => requestAnimationFrame(render)).observe(document.body, { childList: true, subtree: true });
+        }
+
+        document.addEventListener("DOMContentLoaded", boot);
+      })();
+    </script>
+  </body>
+</html>
