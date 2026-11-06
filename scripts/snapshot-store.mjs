@@ -7,7 +7,8 @@ const state = path.join(root, ".publication-state");
 const branch = "site-snapshots";
 const remoteRef = `refs/remotes/origin/${branch}`;
 const git = (args, options = {}) => execFileSync("git", args, {
-  cwd: root, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], ...options
+  cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024,
+  stdio: ["pipe", "pipe", "pipe"], ...options
 }).trim();
 
 function validate(data) {

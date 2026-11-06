@@ -12,7 +12,8 @@ test("snapshot publication preserves data, uses unique revisions, and rejects st
   const repo = path.join(fixture, "source");
   const script = fileURLToPath(new URL("snapshot-store.mjs", import.meta.url));
   const run = (args, cwd = repo, options = {}) => execFileSync("git", args, {
-    cwd, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], ...options
+    cwd, encoding: "utf8", maxBuffer: 256 * 1024 * 1024,
+    stdio: ["pipe", "pipe", "pipe"], ...options
   }).trim();
   mkdirSync(remote);
   run(["init", "--bare"], remote);
@@ -20,7 +21,7 @@ test("snapshot publication preserves data, uses unique revisions, and rejects st
   run(["config", "user.name", "Snapshot test"]);
   run(["config", "user.email", "test@example.invalid"]);
   mkdirSync(path.join(repo, "data"));
-  const first = { updatedAt: "2026-11-07T00:00:00Z", players: [], matches: [{ matchId: "old" }], lpHistory: [{ matchId: "old", score: 100 }] };
+  const first = { updatedAt: "2026-11-07T00:00:00Z", players: [], matches: [{ matchId: "old", details: "x".repeat(2 * 1024 * 1024) }], lpHistory: [{ matchId: "old", score: 100 }] };
   writeFileSync(path.join(repo, "data/rift-lab.json"), JSON.stringify(first));
   run(["add", "."]);
   run(["commit", "-m", "Initial source"]);
