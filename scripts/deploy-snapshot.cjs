@@ -18,7 +18,7 @@ module.exports = async ({ github, context, core }) => {
       ...parameters, pages_deployment_id: data.id
     });
     core.info(`Pages publication: ${deployment.status}`);
-    if (deployment.status === "built") {
+    if (["succeed", "built"].includes(deployment.status)) {
       core.setOutput("page_url", data.page_url);
       return;
     }

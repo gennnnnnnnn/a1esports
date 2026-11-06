@@ -10,7 +10,7 @@ test("Pages deploys the stored snapshot revision and checks its terminal status"
   process.env.PAGES_ARTIFACT_ID = "123";
   global.setTimeout = (callback) => before.timer(callback, 0);
   try {
-    for (const status of ["built", "deployment_failed"]) {
+    for (const status of ["succeed", "built", "deployment_failed"]) {
       const requests = [];
       const outputs = {};
       const github = { request: async (route, body) => {
@@ -21,7 +21,7 @@ test("Pages deploys the stored snapshot revision and checks its terminal status"
       } };
       const core = { info() {}, getIDToken: async () => "test-oidc-token", setOutput: (key, value) => { outputs[key] = value; } };
       const work = deploy({ github, core, context: { sha: "2".repeat(40), repo: { owner: "owner", repo: "repo" } } });
-      if (status === "built") {
+      if (["succeed", "built"].includes(status)) {
         await work;
         assert.equal(outputs.page_url, "https://example.invalid/");
       } else {
