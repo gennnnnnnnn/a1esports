@@ -27,8 +27,7 @@ const TRACKED_PLAYERS = [
   { name: "25 Tu\u1ed5i L\u1ea5y V\u1ee3#1207", riotName: "25 Tu\u1ed5i L\u1ea5y V\u1ee3", tag: "1207", puuid: "Shq4Ybs0LFzGqxSLIKBCV0-ndBiYz733bAC2TnGGuO1ueLS-OqoXfHZMwIq1KxwHaTT1yX-yH6e6Eg" },
   { name: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3#skepy", riotName: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3", tag: "skepy", puuid: "eGuPe1i0dvJoKRjEJOeNVJ7AUwNKRaO4vk0rzEHoO5QbmObQ12cxiQ8hc6hW_9xswC-bHGUQjE21Ug" },
   { name: "\u0110\u00e9o ch\u01a1i Aram#6887", riotName: "\u0110\u00e9o ch\u01a1i Aram", tag: "6887", puuid: "cxXHRBwkAK4lrYCKZxNAfsvYSMtQDo4QF8ZLGVCUrVpIDt-Nwxrqhs5YS6FL7YkZOnZGYoeDCX8afg" },
-  { name: "ANTI BORNG#1152", riotName: "ANTI BORNG", tag: "1152" },
-  { name: "\u82b1\u9ce5\u98a8\u6708#A1E", riotName: "\u82b1\u9ce5\u98a8\u6708", tag: "A1E", platformRegion: "jp1" }
+  { name: "ANTI BORNG#1152", riotName: "ANTI BORNG", tag: "1152" }
 ];
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
