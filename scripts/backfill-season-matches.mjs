@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { riotRouting, matchRegionForId } from "./riot-routing.mjs";
 
 const OUTPUT_PATH = new URL("../data/rift-lab.json", import.meta.url);
-const MATCH_REGION = "sea";
 const HISTORY_START_YEAR = Number(process.env.HISTORY_START_YEAR || 2022);
 const RIOT_REQUEST_DELAY_MS = Number(process.env.RIOT_REQUEST_DELAY_MS || 1250);
 const RIOT_API_KEY = process.env.RIOT_API_KEY || "";
@@ -159,7 +159,7 @@ async function allRankedMatchIds(player, season) {
   const ids = [];
   for (let start = 0; ; start += PAGE_SIZE) {
     const page = await riotFetch(
-      `https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=${start}&count=${PAGE_SIZE}&type=ranked&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
+      `https://${riotRouting(player).matchRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=${start}&count=${PAGE_SIZE}&type=ranked&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
     );
     ids.push(...page);
     if (page.length < PAGE_SIZE) break;
@@ -183,7 +183,7 @@ async function main() {
         for (const matchId of ids) {
           const key = matchKey(matchId, player.name);
           if (existing.has(key)) continue;
-          const match = await riotFetch(`https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/${enc(matchId)}`);
+          const match = await riotFetch(`https://${matchRegionForId(matchId)}.api.riotgames.com/lol/match/v5/matches/${enc(matchId)}`);
           const part = (match.info?.participants || []).find((entry) => entry.puuid === player.puuid);
           if (!part || !RANKED_QUEUES.includes(Number(match.info?.queueId))) continue;
           const row = toMatchRow(player, match, part);

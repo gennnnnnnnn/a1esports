@@ -134,6 +134,8 @@ MATCH-V5   -> sea.api.riotgames.com
 SUMMONER-V4 / LEAGUE-V4 -> vn2.api.riotgames.com
 ```
 
+Japan players set `platformRegion: "jp1"`: account and match requests use `asia.api.riotgames.com`, and summoner/rank requests use `jp1.api.riotgames.com`. Players without a platform setting keep the existing Vietnam routes. Match detail routing follows the match ID, including Korean matches returned by the Asia history endpoint.
+
 Ranked queues:
 
 ```text

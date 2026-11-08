@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { riotRouting, matchRegionForId } from "./riot-routing.mjs";
 
 const ACCOUNT_REGION = "asia";
 const MATCH_REGION = "sea";
@@ -26,7 +27,8 @@ const TRACKED_PLAYERS = [
   { name: "25 Tu\u1ed5i L\u1ea5y V\u1ee3#1207", riotName: "25 Tu\u1ed5i L\u1ea5y V\u1ee3", tag: "1207", puuid: "Shq4Ybs0LFzGqxSLIKBCV0-ndBiYz733bAC2TnGGuO1ueLS-OqoXfHZMwIq1KxwHaTT1yX-yH6e6Eg" },
   { name: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3#skepy", riotName: "\u0110\u1ea5uT\u00f4nC\u01b0\u1eddngGi\u1ea3", tag: "skepy", puuid: "eGuPe1i0dvJoKRjEJOeNVJ7AUwNKRaO4vk0rzEHoO5QbmObQ12cxiQ8hc6hW_9xswC-bHGUQjE21Ug" },
   { name: "\u0110\u00e9o ch\u01a1i Aram#6887", riotName: "\u0110\u00e9o ch\u01a1i Aram", tag: "6887", puuid: "cxXHRBwkAK4lrYCKZxNAfsvYSMtQDo4QF8ZLGVCUrVpIDt-Nwxrqhs5YS6FL7YkZOnZGYoeDCX8afg" },
-  { name: "ANTI BORNG#1152", riotName: "ANTI BORNG", tag: "1152" }
+  { name: "ANTI BORNG#1152", riotName: "ANTI BORNG", tag: "1152" },
+  { name: "\u82b1\u9ce5\u98a8\u6708#A1E", riotName: "\u82b1\u9ce5\u98a8\u6708", tag: "A1E", platformRegion: "jp1" }
 ];
 
 const SAMPLE_DATA_PATH = path.resolve("data/sample-rift-lab.json");
@@ -113,8 +115,9 @@ async function buildRiftLabData() {
     source: {
       provider: "GitHub Actions",
       accountRegion: ACCOUNT_REGION,
-      matchRegion: MATCH_REGION,
-      platformRegion: PLATFORM_REGION,
+      matchRegion: players.some((player) => riotRouting(player).matchRegion !== MATCH_REGION) ? "mixed" : MATCH_REGION,
+      platformRegion: players.some((player) => riotRouting(player).platformRegion !== PLATFORM_REGION) ? "mixed" : PLATFORM_REGION,
+      platformRegions: [...new Set(players.map((player) => riotRouting(player).platformRegion))],
       rankedQueues: RANKED_QUEUES,
       recentMatchLimit: RECENT_MATCH_LIMIT,
       historyStartYear: HISTORY_START_YEAR,
@@ -235,6 +238,7 @@ async function buildPlayer(tracked, puuid, nameHistory = []) {
     riotName: tracked.riotName,
     tag: tracked.tag,
     puuid,
+    platformRegion: riotRouting(tracked).platformRegion,
     nameHistory,
     level: 0,
     soloTier: "UNRANKED",
@@ -254,7 +258,7 @@ async function buildPlayer(tracked, puuid, nameHistory = []) {
 
   try {
     const summoner = await riotFetch(
-      `https://${PLATFORM_REGION}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${enc(puuid)}`
+      `https://${riotRouting(player).platformRegion}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${enc(puuid)}`
     );
     player.level = Number(summoner.summonerLevel) || 0;
   } catch (error) {
@@ -263,7 +267,7 @@ async function buildPlayer(tracked, puuid, nameHistory = []) {
 
   try {
     const entries = await riotFetch(
-      `https://${PLATFORM_REGION}.api.riotgames.com/lol/league/v4/entries/by-puuid/${enc(puuid)}`
+      `https://${riotRouting(player).platformRegion}.api.riotgames.com/lol/league/v4/entries/by-puuid/${enc(puuid)}`
     );
     applyRank(player, "solo", entries.find((entry) => entry.queueType === "RANKED_SOLO_5x5"));
     applyRank(player, "flex", entries.find((entry) => entry.queueType === "RANKED_FLEX_SR"));
@@ -293,7 +297,7 @@ async function fetchPlayerMatches(player, matchDetailCache, existingMatches) {
 
   for (const queueId of RANKED_QUEUES) {
     const matchIds = await riotFetch(
-      `https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=0&count=${MATCH_COUNT_PER_QUEUE}&queue=${queueId}`
+      `https://${riotRouting(player).matchRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=0&count=${MATCH_COUNT_PER_QUEUE}&queue=${queueId}`
     );
 
     matchIds.forEach((matchId) => ids.push({ matchId, queueId }));
@@ -337,7 +341,7 @@ async function fetchHistoricalMatches(player, matchDetailCache, existingMatches)
         }
 
         const matchIds = await riotFetch(
-          `https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=0&count=${HISTORICAL_MATCH_COUNT_PER_QUEUE}&queue=${queueId}&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
+          `https://${riotRouting(player).matchRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enc(player.puuid)}/ids?start=0&count=${HISTORICAL_MATCH_COUNT_PER_QUEUE}&queue=${queueId}&startTime=${toUnixSeconds(season.start)}&endTime=${toUnixSeconds(season.end)}`
         );
 
         console.log(
@@ -397,7 +401,7 @@ async function getMatchDetail(matchId, cache) {
   if (!cache.has(matchId)) {
     cache.set(
       matchId,
-      riotFetch(`https://${MATCH_REGION}.api.riotgames.com/lol/match/v5/matches/${enc(matchId)}`)
+      riotFetch(`https://${matchRegionForId(matchId)}.api.riotgames.com/lol/match/v5/matches/${enc(matchId)}`)
     );
   }
 
