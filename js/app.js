@@ -433,6 +433,7 @@
       riotName: text(read(player, ["riotName", "Riot Game Name", "gameName"])) || "",
       tag: text(read(player, ["tag", "tagline", "Tagline"])) || "",
       puuid: text(read(player, ["puuid", "PUUID"])),
+      platformRegion: text(read(player, ["platformRegion"])) || "vn2",
       nameHistory: asArray(read(player, ["nameHistory", "Name History"])).map((change) => ({
         from: text(read(change, ["from", "From"])),
         to: text(read(change, ["to", "To"])),
@@ -1011,7 +1012,7 @@
             <div>
               <h3>${escapeHtml(riotId(player))}</h3>
               <p>
-                <span>VN2</span>
+                <span>${escapeHtml(player.platformRegion.toUpperCase())}</span>
                 ${latestNameChange ? nameChangeBadge(latestNameChange) : ""}
               </p>
             </div>
