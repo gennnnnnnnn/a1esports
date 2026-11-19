@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-19T21:10:19.700Z",
+  "updatedAt": "2026-11-19T21:15:32.028Z",
   "source": {
     "provider": "GitHub Actions",
     "accountRegion": "asia",
@@ -101,10 +101,10 @@
       "level": 740,
       "soloTier": "MASTER",
       "soloRank": "I",
-      "soloLp": 541,
-      "soloWins": 257,
+      "soloLp": 560,
+      "soloWins": 258,
       "soloLosses": 232,
-      "soloWr": 52.56,
+      "soloWr": 52.65,
       "flexTier": "DIAMOND",
       "flexRank": "I",
       "flexLp": 75,
@@ -271,9 +271,9 @@
     {
       "player": "Hốc Văn Trưởng#1207",
       "games": 20,
-      "wins": 12,
-      "losses": 8,
-      "winRate": 60
+      "wins": 13,
+      "losses": 7,
+      "winRate": 65
     },
     {
       "player": "HoangLiuMu#2252",
@@ -313,7 +313,7 @@
   ],
   "latestNotes": [
     {
-      "date": "2026-11-19T21:10:19.699Z",
+      "date": "2026-11-19T21:15:32.027Z",
       "player": "Road to the Top#A1E",
       "scope": "Last 20 ranked games",
       "summary": "Road to the Top#A1E: last 20 games, 8W-12L, avg KDA 2.23, CS/min 5.51, vision/min 0.93.",
@@ -322,7 +322,7 @@
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.027Z",
       "player": "Vua Bịp Gia Lai#7777",
       "scope": "Last 20 ranked games",
       "summary": "Vua Bịp Gia Lai#7777: last 20 games, 10W-10L, avg KDA 2.09, CS/min 7.49, vision/min 0.81.",
@@ -331,7 +331,7 @@
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.027Z",
       "player": "Tian laoshi#2252",
       "scope": "Last 20 ranked games",
       "summary": "Tian laoshi#2252: last 20 games, 10W-10L, avg KDA 2.13, CS/min 6.51, vision/min 0.95.",
@@ -340,16 +340,16 @@
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.027Z",
       "player": "Hốc Văn Trưởng#1207",
       "scope": "Last 20 ranked games",
-      "summary": "Hốc Văn Trưởng#1207: last 20 games, 12W-8L, avg KDA 4.16, CS/min 7.27, vision/min 1.57.",
+      "summary": "Hốc Văn Trưởng#1207: last 20 games, 13W-7L, avg KDA 4.39, CS/min 7.24, vision/min 1.58.",
       "strengths": "Good fight conversion and survival.",
       "weaknesses": "Main issue is likely macro timing, not pure mechanics.",
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.027Z",
       "player": "HoangLiuMu#2252",
       "scope": "Last 20 ranked games",
       "summary": "HoangLiuMu#2252: last 20 games, 8W-12L, avg KDA 3.97, CS/min 6.70, vision/min 1.12.",
@@ -358,7 +358,7 @@
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.028Z",
       "player": "25 Tuổi Lấy Vợ#1207",
       "scope": "Last 20 ranked games",
       "summary": "25 Tuổi Lấy Vợ#1207: last 20 games, 12W-8L, avg KDA 3.86, CS/min 7.49, vision/min 1.18.",
@@ -367,7 +367,7 @@
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.028Z",
       "player": "ĐấuTônCườngGiả#skepy",
       "scope": "Last 20 ranked games",
       "summary": "ĐấuTônCườngGiả#skepy: last 20 games, 10W-10L, avg KDA 3.45, CS/min 7.20, vision/min 0.75.",
@@ -376,7 +376,7 @@
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.028Z",
       "player": "Đéo chơi Aram#6887",
       "scope": "Last 20 ranked games",
       "summary": "Đéo chơi Aram#6887: last 20 games, 10W-10L, avg KDA 3.51, CS/min 6.04, vision/min 1.32.",
@@ -385,7 +385,7 @@
       "actions": "Review deaths before objectives, recall earlier, and track whether CS/min drops after 14 minutes."
     },
     {
-      "date": "2026-11-19T21:10:19.700Z",
+      "date": "2026-11-19T21:15:32.028Z",
       "player": "ANTI BORNG#1152",
       "scope": "Last 20 ranked games",
       "summary": "ANTI BORNG#1152: last 20 games, 16W-4L, avg KDA 4.25, CS/min 7.55, vision/min 0.93.",
@@ -395,6 +395,61 @@
     }
   ],
   "matches": [
+    {
+      "matchStatVersion": 2,
+      "matchId": "VN2_1644335273",
+      "gameStart": "2026-11-19T20:54:38.642Z",
+      "gameVersion": "16.23.839.9929",
+      "queueId": 420,
+      "queueLabel": "Ranked Solo/Duo",
+      "durationMin": 15.72,
+      "player": "Hốc Văn Trưởng#1207",
+      "playerPuuid": "TQi4p1Kii4HP8iDJ8my7JUagyXA74akdQ2FJ5iZYL1oYNe-u8L8e5-SZO4fpLK1Lgj8_zcH-RALFDA",
+      "riotId": "Đệ Tử Asoken#1207",
+      "champion": "Lillia",
+      "role": "JUNGLE",
+      "result": "Win",
+      "kills": 6,
+      "deaths": 2,
+      "assists": 8,
+      "kda": 7,
+      "cs": 103,
+      "csMin": 6.55,
+      "visionScore": 20,
+      "visionMin": 1.27,
+      "damage": 12256,
+      "damageMin": 779.81,
+      "teamKills": 20,
+      "teamDamage": 43649,
+      "killParticipation": 70,
+      "damageShare": 28.08,
+      "teamDeaths": 13,
+      "deathShare": 15.38,
+      "gold": 7907,
+      "goldMin": 503.1,
+      "wardsPlaced": 4,
+      "wardsPlacedMin": 0.25,
+      "wardsKilled": 2,
+      "wardsKilledMin": 0.13,
+      "objectiveDamage": 17371,
+      "objectiveDamageMin": 1105.26,
+      "items": [
+        3147,
+        2503,
+        3009,
+        2508,
+        0,
+        1052,
+        3364
+      ],
+      "summonerSpells": [
+        4,
+        11
+      ],
+      "skinId": null,
+      "skinName": "",
+      "aiNote": "Clean win. Keep this pattern: controlled deaths, useful fights, no circus required."
+    },
     {
       "matchStatVersion": 2,
       "matchId": "VN2_1644310299",
@@ -223836,7 +223891,7 @@
       "queue": "Solo/Duo",
       "matchId": "VN2_1515525419",
       "gameStart": "2026-07-25T16:42:10.988Z",
-      "capturedAt": "2026-11-19T21:10:20.052Z",
+      "capturedAt": "2026-11-19T21:15:32.253Z",
       "tier": "DIAMOND",
       "rank": "II",
       "lp": 75,
@@ -223868,7 +223923,7 @@
       "queue": "Solo/Duo",
       "matchId": "VN2_1521059461",
       "gameStart": "2026-07-29T16:12:58.775Z",
-      "capturedAt": "2026-11-19T21:10:19.962Z",
+      "capturedAt": "2026-11-19T21:15:32.184Z",
       "tier": "DIAMOND",
       "rank": "II",
       "lp": 75,
@@ -237716,13 +237771,29 @@
       "losses": 232,
       "score": 3341,
       "baseline": false
+    },
+    {
+      "player": "Hốc Văn Trưởng#1207",
+      "playerPuuid": "TQi4p1Kii4HP8iDJ8my7JUagyXA74akdQ2FJ5iZYL1oYNe-u8L8e5-SZO4fpLK1Lgj8_zcH-RALFDA",
+      "queueId": 420,
+      "queue": "Solo/Duo",
+      "matchId": "VN2_1644335273",
+      "gameStart": "2026-11-19T20:54:38.642Z",
+      "capturedAt": "2026-11-19T21:15:32.204Z",
+      "tier": "MASTER",
+      "rank": "I",
+      "lp": 560,
+      "wins": 258,
+      "losses": 232,
+      "score": 3360,
+      "baseline": false
     }
   ],
   "metrics": {
     "trackedPlayers": 9,
-    "importedMatches": 4062,
+    "importedMatches": 4063,
     "bestRecent": "ANTI BORNG#1152 80%",
-    "highestSolo": "Hốc Văn Trưởng#1207 Master I 541 LP",
+    "highestSolo": "Hốc Văn Trưởng#1207 Master I 560 LP",
     "highestFlex": "Hốc Văn Trưởng#1207 Diamond I 75 LP",
     "worstSolo": "Đéo chơi Aram#6887 33%"
   }
